@@ -97,7 +97,30 @@ const LEVELS_S4 = [
   {target:1200000, moves:14, colors:6, frozen:0, locked:10},  // 80 - sector boss
 ];
 
-const LEVELS = LEVELS_S1.concat(LEVELS_S2).concat(LEVELS_S3).concat(LEVELS_S4);
+const LEVELS_S5 = [
+  {target:1320000, moves:24, colors:6, frozen:0, gold:1},   // 81
+  {target:1430000, moves:23, colors:6, frozen:0, gold:1},   // 82
+  {target:1570000, moves:23, colors:6, frozen:0, gold:2},   // 83
+  {target:1705000, moves:22, colors:6, frozen:0, gold:2},   // 84
+  {target:1870000, moves:22, colors:6, frozen:0, gold:3},   // 85
+  {target:2040000, moves:21, colors:6, frozen:0, gold:3},   // 86
+  {target:2230000, moves:21, colors:6, frozen:0, gold:4},   // 87
+  {target:2420000, moves:20, colors:6, frozen:0, gold:4},   // 88
+  {target:2640000, moves:20, colors:6, frozen:0, gold:5},   // 89
+  {target:2860000, moves:19, colors:6, frozen:0, gold:5},   // 90
+  {target:3110000, moves:19, colors:6, frozen:0, gold:6},   // 91
+  {target:3360000, moves:18, colors:6, frozen:0, gold:6},   // 92
+  {target:3630000, moves:18, colors:6, frozen:0, gold:7},   // 93
+  {target:3930000, moves:17, colors:6, frozen:0, gold:7},   // 94
+  {target:4260000, moves:17, colors:6, frozen:0, gold:8},   // 95
+  {target:4620000, moves:16, colors:6, frozen:0, gold:8},   // 96
+  {target:5000000, moves:16, colors:6, frozen:0, gold:9},   // 97
+  {target:5420000, moves:15, colors:6, frozen:0, gold:9},   // 98
+  {target:5860000, moves:15, colors:6, frozen:0, gold:10},  // 99
+  {target:6600000, moves:14, colors:6, frozen:0, gold:10},  // 100 - sector boss
+];
+
+const LEVELS = LEVELS_S1.concat(LEVELS_S2).concat(LEVELS_S3).concat(LEVELS_S4).concat(LEVELS_S5);
 
 const SECTORS = [
   {id:1, name:"SECTOR 1", title:"حزام الكويكبات", sub:"Asteroid Belt", start:1, end:20, planetClass:"planet-1",
@@ -112,6 +135,9 @@ const SECTORS = [
   {id:4, name:"SECTOR 4", title:"القمر الكريستالي", sub:"Crystal Moon", start:61, end:80, planetClass:"planet-4",
    feature:"🔒 جواهر مقفلة - افتحها بمطابقة بجانبها مباشرة",
    tagline:"حرر الجواهر المحبوسة في أقفاص القمر الكريستالي!"},
+  {id:5, name:"SECTOR 5", title:"المسبك النجمي", sub:"Stellar Forge", start:81, end:100, planetClass:"planet-5",
+   feature:"✨ جواهر ذهبية - تضاعف نقاط أي مطابقة تشارك فيها",
+   tagline:"اصهر النجوم واجمع أعظم الكنوز في المسبك النجمي!"},
 ];
 
 const BOOSTERS = {
@@ -151,6 +177,8 @@ const ACHIEVEMENTS = [
   {icon:"👑", title:"أسطورة المجرة",    desc:"اجمع 120 نجمة إجمالاً",              check:p=>totalStars(p)>=120},
   {icon:"💜", title:"كاسر الأقفاص",     desc:"أكمل القمر الكريستالي (Sector 4)",   check:p=>(p.stars[80]||0)>=1},
   {icon:"🏆", title:"بطل المجرة",       desc:"اجمع 180 نجمة إجمالاً",              check:p=>totalStars(p)>=180},
+  {icon:"🌌", title:"سيد المسبك النجمي", desc:"أكمل المسبك النجمي (Sector 5)",     check:p=>(p.stars[100]||0)>=1},
+  {icon:"💫", title:"إمبراطور المجرة",   desc:"اجمع 240 نجمة إجمالاً",              check:p=>totalStars(p)>=240},
 ];
 
 let board = [];
@@ -214,13 +242,13 @@ function randomTypeNoMatch(r,c,colors){
   return t;
 }
 
-function buildBoard(colors, frozenCount, cometCount, lockedCount){
+function buildBoard(colors, frozenCount, cometCount, lockedCount, goldCount){
   board = [];
   for(let r=0;r<ROWS;r++){
     board.push([]);
     for(let c=0;c<COLS;c++){
       const type = randomTypeNoMatch(r,c,colors);
-      board[r][c] = {id: nextId++, type, frozen:0, comet:false, locked:false, spawnFrom: r-ROWS};
+      board[r][c] = {id: nextId++, type, frozen:0, comet:false, locked:false, gold:false, spawnFrom: r-ROWS};
     }
   }
   let placed=0, attempts=0;
@@ -240,6 +268,12 @@ function buildBoard(colors, frozenCount, cometCount, lockedCount){
     attempts++;
     const r = Math.floor(Math.random()*ROWS), c = Math.floor(Math.random()*COLS);
     if(!board[r][c].frozen && !board[r][c].comet && !board[r][c].locked){ board[r][c].locked = true; placed++; }
+  }
+  placed=0; attempts=0;
+  while(placed < (goldCount||0) && attempts < 500){
+    attempts++;
+    const r = Math.floor(Math.random()*ROWS), c = Math.floor(Math.random()*COLS);
+    if(!board[r][c].frozen && !board[r][c].comet && !board[r][c].locked && !board[r][c].gold){ board[r][c].gold = true; placed++; }
   }
 }
 
@@ -291,7 +325,7 @@ function applyGravity(colors){
       if(idx < colGems.length){
         board[r][c] = colGems[idx];
       }else{
-        board[r][c] = {id: nextId++, type: Math.floor(Math.random()*colors), frozen:0, comet:false, locked:false, spawnFrom: r-numNew};
+        board[r][c] = {id: nextId++, type: Math.floor(Math.random()*colors), frozen:0, comet:false, locked:false, gold:false, spawnFrom: r-numNew};
       }
     }
   }
@@ -368,11 +402,13 @@ function render(){
         if(cell.frozen>0) html += '<div class="ice-overlay"></div>';
         if(cell.comet) html += '<div class="comet-overlay">☄️</div>';
         if(cell.locked) html += '<div class="cage-overlay">🔒</div>';
+        if(cell.gold) html += '<div class="gold-overlay">✨</div>';
         html += '</div>';
         el.innerHTML = html;
         if(cell.frozen>0) el.classList.add("frozen");
         if(cell.comet) el.classList.add("comet");
         if(cell.locked) el.classList.add("locked");
+        if(cell.gold) el.classList.add("gold");
         el.style.width = cellSize+"px";
         el.style.height = cellSize+"px";
         const startY = (cell.spawnFrom!==undefined ? cell.spawnFrom : r) * cellSize;
@@ -423,10 +459,12 @@ function updateHud(){
   spans[2].classList.toggle("reached", score>=lvl.target*1.5);
 }
 
-function showCombo(points, chain){
+function showCombo(points, chain, goldMult){
   const el = document.createElement("div");
   el.className = "combo-pop";
-  el.textContent = chain>1 ? `+${points}  COMBO x${chain}!` : `+${points}`;
+  let text = chain>1 ? `+${points}  COMBO x${chain}!` : `+${points}`;
+  if(goldMult>1) text += `  ✨x${goldMult}`;
+  el.textContent = text;
   el.style.top = (40 + Math.random()*20)+"%";
   comboLayer.appendChild(el);
   setTimeout(()=>el.remove(), 850);
@@ -468,13 +506,20 @@ async function resolveMatches(matches, colors, chain){
     }
   }
 
+  let goldMult = 1;
+  for(const key of matches){
+    const [r,c] = key.split(",").map(Number);
+    const cell = board[r] && board[r][c];
+    if(cell && cell.gold){ goldMult = 2; break; }
+  }
+
   const count = matches.size;
   const base = count*60 + Math.max(0,count-3)*30;
-  const mult = 1 + (chain-1)*0.5;
+  const mult = (1 + (chain-1)*0.5) * goldMult;
   const gained = applyCharBonus(Math.round(base*mult));
   score += gained;
   updateHud();
-  showCombo(gained, chain);
+  showCombo(gained, chain, goldMult);
 
   // locked gems adjacent to a match get unlocked (but not cleared this turn)
   for(const key of matches){
@@ -555,7 +600,7 @@ async function trySwap(r1,c1,r2,c2){
   if(!hasPossibleMove()){
     await wait(250);
     showToast("لا توجد حركات متاحة - يتم الخلط 🔄");
-    do{ buildBoard(colors, lvl.frozen, lvl.comet, lvl.locked); }while(!hasPossibleMove());
+    do{ buildBoard(colors, lvl.frozen, lvl.comet, lvl.locked, lvl.gold); }while(!hasPossibleMove());
     render();
     await wait(450);
   }
@@ -621,7 +666,7 @@ async function useHammer(r,c){
   if(!hasPossibleMove()){
     await wait(250);
     showToast("لا توجد حركات متاحة - يتم الخلط 🔄");
-    do{ buildBoard(colors, lvl.frozen, lvl.comet, lvl.locked); }while(!hasPossibleMove());
+    do{ buildBoard(colors, lvl.frozen, lvl.comet, lvl.locked, lvl.gold); }while(!hasPossibleMove());
     render();
     await wait(450);
   }
@@ -636,7 +681,7 @@ async function useShuffle(){
   powerCharges.shuffle--;
   updatePowerUI();
   const lvl = LEVELS[currentLevel-1];
-  do{ buildBoard(lvl.colors, lvl.frozen, lvl.comet, lvl.locked); }while(!hasPossibleMove());
+  do{ buildBoard(lvl.colors, lvl.frozen, lvl.comet, lvl.locked, lvl.gold); }while(!hasPossibleMove());
   render();
   showToast("تم خلط اللوحة 🔀");
   await wait(450);
@@ -725,7 +770,7 @@ async function useBooster(key, r, c){
   if(!hasPossibleMove()){
     await wait(250);
     showToast("لا توجد حركات متاحة - يتم الخلط 🔄");
-    do{ buildBoard(colors, lvl.frozen, lvl.comet, lvl.locked); }while(!hasPossibleMove());
+    do{ buildBoard(colors, lvl.frozen, lvl.comet, lvl.locked, lvl.gold); }while(!hasPossibleMove());
     render();
     await wait(450);
   }
@@ -783,7 +828,7 @@ async function useGemConvert(){
   if(!hasPossibleMove()){
     await wait(250);
     showToast("لا توجد حركات متاحة - يتم الخلط 🔄");
-    do{ buildBoard(colors, lvl.frozen, lvl.comet, lvl.locked); }while(!hasPossibleMove());
+    do{ buildBoard(colors, lvl.frozen, lvl.comet, lvl.locked, lvl.gold); }while(!hasPossibleMove());
     render();
     await wait(450);
   }
@@ -938,8 +983,8 @@ function startLevel(n){
   gemEls.clear();
   selected = null;
 
-  buildBoard(lvl.colors, lvl.frozen, lvl.comet, lvl.locked);
-  while(!hasPossibleMove()) buildBoard(lvl.colors, lvl.frozen, lvl.comet, lvl.locked);
+  buildBoard(lvl.colors, lvl.frozen, lvl.comet, lvl.locked, lvl.gold);
+  while(!hasPossibleMove()) buildBoard(lvl.colors, lvl.frozen, lvl.comet, lvl.locked, lvl.gold);
 
   document.getElementById("levelNum").textContent = n;
   document.getElementById("charBadge").textContent = activeChar().avatar;
