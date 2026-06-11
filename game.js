@@ -1,31 +1,89 @@
-/* TEMO CRUSH - Match-3 engine (Sector 1: Asteroid Belt) */
+/* TEMO CRUSH - Match-3 engine (Sector 1: Asteroid Belt, Sector 2: Gas Giant) */
 (function(){
 "use strict";
 
 const COLS = 8, ROWS = 8;
 const STORAGE_KEY = "temoCrushProgress";
 
-const LEVELS = [
-  {target:600,   moves:25, colors:4},  // 1
-  {target:900,   moves:24, colors:4},  // 2
-  {target:1300,  moves:23, colors:4},  // 3
-  {target:1700,  moves:22, colors:5},  // 4
-  {target:2200,  moves:22, colors:5},  // 5
-  {target:2700,  moves:21, colors:5},  // 6
-  {target:3300,  moves:21, colors:5},  // 7
-  {target:3900,  moves:20, colors:5},  // 8
-  {target:4600,  moves:20, colors:5},  // 9
-  {target:5400,  moves:19, colors:6},  // 10
-  {target:6200,  moves:19, colors:6},  // 11
-  {target:7000,  moves:18, colors:6},  // 12
-  {target:7900,  moves:18, colors:6},  // 13
-  {target:8800,  moves:17, colors:6},  // 14
-  {target:9800,  moves:17, colors:6},  // 15
-  {target:10800, moves:16, colors:6},  // 16
-  {target:11900, moves:16, colors:6},  // 17
-  {target:13000, moves:15, colors:6},  // 18
-  {target:14200, moves:15, colors:6},  // 19
-  {target:16000, moves:14, colors:6},  // 20 - boss
+const LEVELS_S1 = [
+  {target:600,   moves:25, colors:4, frozen:0},  // 1
+  {target:900,   moves:24, colors:4, frozen:0},  // 2
+  {target:1300,  moves:23, colors:4, frozen:0},  // 3
+  {target:1700,  moves:22, colors:5, frozen:0},  // 4
+  {target:2200,  moves:22, colors:5, frozen:0},  // 5
+  {target:2700,  moves:21, colors:5, frozen:0},  // 6
+  {target:3300,  moves:21, colors:5, frozen:0},  // 7
+  {target:3900,  moves:20, colors:5, frozen:0},  // 8
+  {target:4600,  moves:20, colors:5, frozen:0},  // 9
+  {target:5400,  moves:19, colors:6, frozen:0},  // 10
+  {target:6200,  moves:19, colors:6, frozen:0},  // 11
+  {target:7000,  moves:18, colors:6, frozen:0},  // 12
+  {target:7900,  moves:18, colors:6, frozen:0},  // 13
+  {target:8800,  moves:17, colors:6, frozen:0},  // 14
+  {target:9800,  moves:17, colors:6, frozen:0},  // 15
+  {target:10800, moves:16, colors:6, frozen:0},  // 16
+  {target:11900, moves:16, colors:6, frozen:0},  // 17
+  {target:13000, moves:15, colors:6, frozen:0},  // 18
+  {target:14200, moves:15, colors:6, frozen:0},  // 19
+  {target:16000, moves:14, colors:6, frozen:0},  // 20 - sector boss
+];
+
+const LEVELS_S2 = [
+  {target:14000, moves:24, colors:5, frozen:2},  // 21
+  {target:15500, moves:23, colors:5, frozen:3},  // 22
+  {target:17000, moves:23, colors:6, frozen:3},  // 23
+  {target:18500, moves:22, colors:6, frozen:4},  // 24
+  {target:20000, moves:22, colors:6, frozen:4},  // 25
+  {target:22000, moves:21, colors:6, frozen:5},  // 26
+  {target:24000, moves:21, colors:6, frozen:5},  // 27
+  {target:26000, moves:20, colors:6, frozen:6},  // 28
+  {target:28000, moves:20, colors:6, frozen:6},  // 29
+  {target:31000, moves:19, colors:6, frozen:7},  // 30
+  {target:33000, moves:19, colors:6, frozen:7},  // 31
+  {target:35000, moves:18, colors:6, frozen:8},  // 32
+  {target:37000, moves:18, colors:6, frozen:8},  // 33
+  {target:39000, moves:17, colors:6, frozen:9},  // 34
+  {target:42000, moves:17, colors:6, frozen:9},  // 35
+  {target:45000, moves:16, colors:6, frozen:10}, // 36
+  {target:48000, moves:16, colors:6, frozen:10}, // 37
+  {target:51000, moves:15, colors:6, frozen:11}, // 38
+  {target:54000, moves:15, colors:6, frozen:11}, // 39
+  {target:60000, moves:14, colors:6, frozen:13}, // 40 - sector boss
+];
+
+const LEVELS = LEVELS_S1.concat(LEVELS_S2);
+
+const SECTORS = [
+  {id:1, name:"SECTOR 1", title:"حزام الكويكبات", sub:"Asteroid Belt", start:1, end:20, planetClass:"planet-1"},
+  {id:2, name:"SECTOR 2", title:"عملاق الغاز",   sub:"Gas Giant",      start:21, end:40, planetClass:"planet-2"},
+];
+
+const CHARACTERS = {
+  kaelen: {
+    name:"Captain Kaelen", nameAr:"الكابتن كايلين", role:"القائد التكتيكي", avatar:"👨‍🚀",
+    stats:{speed:70,power:85,skill:90},
+    perk:"⚡ +10% نقاط في كل مطابقة", scoreMult:1.10, extraMoves:0
+  },
+  elara: {
+    name:"Major Elara", nameAr:"الرائد إيلارا", role:"أخصائية الأولويات", avatar:"👩‍🚀",
+    stats:{speed:90,power:75,skill:85},
+    perk:"🎯 +1 حركة إضافية في كل مرحلة", scoreMult:1.0, extraMoves:1
+  }
+};
+
+function totalStars(p){
+  return Object.values(p.stars).reduce((a,b)=>a+b,0);
+}
+
+const ACHIEVEMENTS = [
+  {icon:"🥇", title:"أول خطوة",        desc:"أكمل المرحلة 1",                    check:p=>(p.stars[1]||0)>=1},
+  {icon:"⭐", title:"نجم ساطع",        desc:"احصل على 3 نجوم في أي مرحلة",        check:p=>Object.values(p.stars).some(s=>s>=3)},
+  {icon:"🔥", title:"سيد الكومبو",      desc:"حقق سلسلة كومبو ×4",                check:p=>(p.maxCombo||0)>=4},
+  {icon:"🪨", title:"حارس الكويكبات",   desc:"أكمل حزام الكويكبات (Sector 1)",     check:p=>(p.stars[20]||0)>=1},
+  {icon:"🌪️", title:"فاتح عملاق الغاز", desc:"أكمل عملاق الغاز (Sector 2)",        check:p=>(p.stars[40]||0)>=1},
+  {icon:"✨", title:"صياد النجوم",      desc:"اجمع 20 نجمة إجمالاً",               check:p=>totalStars(p)>=20},
+  {icon:"🌟", title:"نخبة المجرة",      desc:"اجمع 60 نجمة إجمالاً",               check:p=>totalStars(p)>=60},
+  {icon:"🚀", title:"كابتن مخضرم",      desc:"أكمل 10 مراحل",                     check:p=>Object.keys(p.stars).filter(k=>p.stars[k]>0).length>=10},
 ];
 
 let board = [];
@@ -36,6 +94,9 @@ let score = 0, movesLeft = 0, currentLevel = 1, target = 0;
 let selected = null;
 let pointerStart = null;
 let gemEls = new Map();
+let currentSector = 1;
+let powerCharges = {hammer:0, shuffle:0};
+let hammerArmed = false;
 
 const boardEl = document.getElementById("board");
 const boardBgEl = document.getElementById("boardBg");
@@ -44,14 +105,17 @@ const comboLayer = document.getElementById("comboLayer");
 
 /* ---------- progress persistence ---------- */
 function loadProgress(){
+  const p = {unlocked:1, stars:{}, best:{}, character:"kaelen", maxCombo:0};
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
     if(raw){
-      const p = JSON.parse(raw);
-      if(p && typeof p.unlocked === "number") return p;
+      const saved = JSON.parse(raw);
+      if(saved && typeof saved === "object") Object.assign(p, saved);
+      if(!p.stars) p.stars = {};
+      if(!p.best) p.best = {};
     }
   }catch(e){}
-  return {unlocked:1, stars:{}, best:{}};
+  return p;
 }
 function saveProgress(){
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); }catch(e){}
@@ -59,6 +123,8 @@ function saveProgress(){
 let progress = loadProgress();
 
 function wait(ms){ return new Promise(r=>setTimeout(r,ms)); }
+function activeChar(){ return CHARACTERS[progress.character] || CHARACTERS.kaelen; }
+function applyCharBonus(points){ return Math.round(points * (activeChar().scoreMult||1)); }
 
 /* ---------- board helpers ---------- */
 function randomTypeNoMatch(r,c,colors){
@@ -72,14 +138,20 @@ function randomTypeNoMatch(r,c,colors){
   return t;
 }
 
-function buildBoard(colors){
+function buildBoard(colors, frozenCount){
   board = [];
   for(let r=0;r<ROWS;r++){
     board.push([]);
     for(let c=0;c<COLS;c++){
       const type = randomTypeNoMatch(r,c,colors);
-      board[r][c] = {id: nextId++, type, spawnFrom: r-ROWS};
+      board[r][c] = {id: nextId++, type, frozen:0, spawnFrom: r-ROWS};
     }
+  }
+  let placed=0, attempts=0;
+  while(placed < (frozenCount||0) && attempts < 500){
+    attempts++;
+    const r = Math.floor(Math.random()*ROWS), c = Math.floor(Math.random()*COLS);
+    if(!board[r][c].frozen){ board[r][c].frozen = 1; placed++; }
   }
 }
 
@@ -131,7 +203,7 @@ function applyGravity(colors){
       if(idx < colGems.length){
         board[r][c] = colGems[idx];
       }else{
-        board[r][c] = {id: nextId++, type: Math.floor(Math.random()*colors), spawnFrom: r-numNew};
+        board[r][c] = {id: nextId++, type: Math.floor(Math.random()*colors), frozen:0, spawnFrom: r-numNew};
       }
     }
   }
@@ -174,7 +246,7 @@ function layoutBoard(){
       boardBgEl.appendChild(cell);
     }
   }
-  for(const [id, el] of gemEls){
+  for(const [, el] of gemEls){
     el.style.width = cellSize+"px";
     el.style.height = cellSize+"px";
   }
@@ -203,7 +275,11 @@ function render(){
       if(!el){
         el = document.createElement("div");
         el.className = `gem gem-${cell.type}`;
-        el.innerHTML = '<div class="gem-shape"><div class="gem-shine"></div></div>';
+        let html = '<div class="gem-shape"><div class="gem-shine"></div>';
+        if(cell.frozen>0) html += '<div class="ice-overlay"></div>';
+        html += '</div>';
+        el.innerHTML = html;
+        if(cell.frozen>0) el.classList.add("frozen");
         el.style.width = cellSize+"px";
         el.style.height = cellSize+"px";
         const startY = (cell.spawnFrom!==undefined ? cell.spawnFrom : r) * cellSize;
@@ -274,19 +350,33 @@ function showToast(msg){
 /* ---------- match resolution ---------- */
 async function resolveMatches(matches, colors, chain){
   if(matches.size===0) return;
+  if(chain > (progress.maxCombo||0)){
+    progress.maxCombo = chain;
+    saveProgress();
+  }
   const count = matches.size;
   const base = count*60 + Math.max(0,count-3)*30;
   const mult = 1 + (chain-1)*0.5;
-  const gained = Math.round(base*mult);
+  const gained = applyCharBonus(Math.round(base*mult));
   score += gained;
   updateHud();
   showCombo(gained, chain);
 
   for(const key of matches){
     const [r,c] = key.split(",").map(Number);
-    const el = gemEls.get(board[r][c].id);
-    if(el) el.classList.add("removing");
-    board[r][c] = null;
+    const cell = board[r][c];
+    const el = gemEls.get(cell.id);
+    if(cell.frozen>0){
+      cell.frozen--;
+      if(el){
+        el.classList.remove("frozen");
+        const overlay = el.querySelector(".ice-overlay");
+        if(overlay) overlay.remove();
+      }
+    }else{
+      if(el) el.classList.add("removing");
+      board[r][c] = null;
+    }
   }
   await wait(220);
   applyGravity(colors);
@@ -301,7 +391,8 @@ async function trySwap(r1,c1,r2,c2){
   if(r2<0||r2>=ROWS||c2<0||c2>=COLS) return;
   if(!isAdjacent({r:r1,c:c1},{r:r2,c:c2})) return;
   busy = true;
-  const colors = LEVELS[currentLevel-1].colors;
+  const lvl = LEVELS[currentLevel-1];
+  const colors = lvl.colors;
 
   swapCells(r1,c1,r2,c2);
   render();
@@ -323,7 +414,7 @@ async function trySwap(r1,c1,r2,c2){
   if(!hasPossibleMove()){
     await wait(250);
     showToast("لا توجد حركات متاحة - يتم الخلط 🔄");
-    do{ buildBoard(colors); }while(!hasPossibleMove());
+    do{ buildBoard(colors, lvl.frozen); }while(!hasPossibleMove());
     render();
     await wait(450);
   }
@@ -331,6 +422,85 @@ async function trySwap(r1,c1,r2,c2){
   checkEnd();
   busy = false;
 }
+
+/* ---------- power-ups ---------- */
+function updatePowerUI(){
+  const hb = document.getElementById("hammerBtn");
+  const sb = document.getElementById("shuffleBtn");
+  hb.querySelector(".pcount").textContent = powerCharges.hammer;
+  sb.querySelector(".pcount").textContent = powerCharges.shuffle;
+  hb.disabled = powerCharges.hammer<=0 || busy;
+  sb.disabled = powerCharges.shuffle<=0 || busy;
+  hb.classList.toggle("armed", hammerArmed);
+}
+
+async function useHammer(r,c){
+  if(busy || powerCharges.hammer<=0) return;
+  hammerArmed = false;
+  powerCharges.hammer--;
+  busy = true;
+  updatePowerUI();
+
+  const lvl = LEVELS[currentLevel-1];
+  const colors = lvl.colors;
+  const cell = board[r][c];
+  const gained = applyCharBonus(80);
+  score += gained;
+  updateHud();
+  showCombo(gained, 1);
+
+  if(cell.frozen>0){
+    cell.frozen--;
+    const el = gemEls.get(cell.id);
+    if(el){
+      el.classList.remove("frozen");
+      const overlay = el.querySelector(".ice-overlay");
+      if(overlay) overlay.remove();
+    }
+  }else{
+    const el = gemEls.get(cell.id);
+    if(el) el.classList.add("removing");
+    board[r][c] = null;
+  }
+  await wait(220);
+  applyGravity(colors);
+  render();
+  await wait(280);
+  const next = findMatches();
+  await resolveMatches(next, colors, 1);
+
+  if(!hasPossibleMove()){
+    await wait(250);
+    showToast("لا توجد حركات متاحة - يتم الخلط 🔄");
+    do{ buildBoard(colors, lvl.frozen); }while(!hasPossibleMove());
+    render();
+    await wait(450);
+  }
+  checkEnd();
+  busy = false;
+  updatePowerUI();
+}
+
+async function useShuffle(){
+  if(busy || powerCharges.shuffle<=0) return;
+  busy = true;
+  powerCharges.shuffle--;
+  updatePowerUI();
+  const lvl = LEVELS[currentLevel-1];
+  do{ buildBoard(lvl.colors, lvl.frozen); }while(!hasPossibleMove());
+  render();
+  showToast("تم خلط اللوحة 🔀");
+  await wait(450);
+  busy = false;
+  updatePowerUI();
+}
+
+document.getElementById("hammerBtn").addEventListener("click", ()=>{
+  if(busy || powerCharges.hammer<=0) return;
+  hammerArmed = !hammerArmed;
+  updatePowerUI();
+});
+document.getElementById("shuffleBtn").addEventListener("click", useShuffle);
 
 /* ---------- input ---------- */
 function cellFromEvent(e){
@@ -350,11 +520,18 @@ boardEl.addEventListener("pointerdown", (e)=>{
 
 boardEl.addEventListener("pointerup", (e)=>{
   if(busy || !pointerStart || !pointerStart.cell) { pointerStart=null; return; }
+  const startCell = pointerStart.cell;
+
+  if(hammerArmed){
+    pointerStart = null;
+    useHammer(startCell.r, startCell.c);
+    return;
+  }
+
   const dx = e.clientX - pointerStart.x;
   const dy = e.clientY - pointerStart.y;
   const absX = Math.abs(dx), absY = Math.abs(dy);
   const threshold = 14;
-  const startCell = pointerStart.cell;
 
   if(Math.max(absX,absY) > threshold){
     let target;
@@ -411,8 +588,9 @@ function onWin(lvl){
   }
   saveProgress();
 
-  document.getElementById("modalIcon").textContent = currentLevel===20 ? "☄️" : "🏆";
-  document.getElementById("modalTitle").textContent = currentLevel===20 ? "Sector 1 Complete!" : "Level Complete!";
+  const isSectorEnd = currentLevel===20 || currentLevel===LEVELS.length;
+  document.getElementById("modalIcon").textContent = isSectorEnd ? "☄️" : "🏆";
+  document.getElementById("modalTitle").textContent = isSectorEnd ? "Sector Complete!" : "Level Complete!";
   renderModalStars(stars);
   document.getElementById("modalScore").textContent = score;
   const nextBtn = document.getElementById("nextBtn");
@@ -447,43 +625,67 @@ function hideModal(){ document.getElementById("modalOverlay").classList.remove("
 function startLevel(n){
   currentLevel = n;
   const lvl = LEVELS[n-1];
+  const sector = SECTORS.find(s=>n>=s.start && n<=s.end);
+  if(sector) currentSector = sector.id;
+
   score = 0;
-  movesLeft = lvl.moves;
+  movesLeft = lvl.moves + (activeChar().extraMoves||0);
   target = lvl.target;
+  powerCharges = {hammer:1, shuffle:1};
+  hammerArmed = false;
 
   for(const [,el] of gemEls) el.remove();
   gemEls.clear();
   selected = null;
 
-  buildBoard(lvl.colors);
-  while(!hasPossibleMove()) buildBoard(lvl.colors);
+  buildBoard(lvl.colors, lvl.frozen);
+  while(!hasPossibleMove()) buildBoard(lvl.colors, lvl.frozen);
 
   document.getElementById("levelNum").textContent = n;
+  document.getElementById("charBadge").textContent = activeChar().avatar;
   document.getElementById("starMarks").dataset.built = "";
   showView("gameView");
   layoutBoard();
   render();
   updateHud();
+  updatePowerUI();
 }
 
 /* ---------- map / navigation ---------- */
 function showView(id){
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.getElementById(id).classList.add("active");
+  document.getElementById("bottomNav").style.display = (id==="gameView") ? "none" : "flex";
 }
 
-function buildLevelPath(){
+function buildSectorTabs(){
+  const el = document.getElementById("sectorTabs");
+  el.innerHTML = SECTORS.map(s=>{
+    const unlocked = progress.unlocked >= s.start;
+    const active = s.id===currentSector;
+    return `<button class="sector-tab ${active?'active':''} ${unlocked?'':'locked'}" data-sector="${s.id}" ${unlocked?'':'disabled'}>${unlocked? s.name : '🔒 '+s.name}</button>`;
+  }).join("");
+  el.querySelectorAll(".sector-tab:not(.locked)").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      currentSector = parseInt(btn.dataset.sector,10);
+      buildMapView();
+    });
+  });
+}
+
+function buildLevelPath(sector){
   const container = document.getElementById("levelPath");
   let html = "";
-  for(let i=1;i<=LEVELS.length;i++){
+  for(let i=sector.start;i<=sector.end;i++){
+    const local = i - sector.start + 1;
     const offset = Math.round(Math.sin(i*0.85)*46);
-    const isBoss = i===LEVELS.length;
+    const isBoss = i===sector.end;
     const unlocked = i <= progress.unlocked;
     const stars = progress.stars[i] || 0;
     html += `<div class="level-node-wrap" style="--off:${offset}px">`;
-    html += `<div class="connector ${i===1?'hidden':''} ${unlocked?'lit':''}"></div>`;
+    html += `<div class="connector ${local===1?'hidden':''} ${unlocked?'lit':''}"></div>`;
     html += `<button class="level-node ${unlocked?'unlocked':'locked'} ${isBoss?'boss':''}" data-level="${i}" ${unlocked?'':'disabled'}>`;
-    html += unlocked ? (isBoss?"☄️":i) : "🔒";
+    html += unlocked ? (isBoss?"☄️":local) : "🔒";
     html += `<div class="stars">`;
     for(let s=1;s<=3;s++) html += `<span class="${s<=stars?'on':''}">★</span>`;
     html += `</div></button></div>`;
@@ -494,15 +696,72 @@ function buildLevelPath(){
   });
 }
 
+function buildMapView(){
+  buildSectorTabs();
+  const sector = SECTORS.find(s=>s.id===currentSector);
+  document.getElementById("sectorName").textContent = sector.name;
+  document.getElementById("sectorTitleAr").textContent = sector.title;
+  document.getElementById("sectorMeta").textContent = `${sector.sub} · ${sector.end-sector.start+1} مرحلة`;
+  document.getElementById("planetIcon").className = "planet-icon " + sector.planetClass;
+  buildLevelPath(sector);
+}
+
+/* ---------- character view ---------- */
+function buildCharacterView(){
+  const container = document.getElementById("charCards");
+  container.innerHTML = Object.keys(CHARACTERS).map(key=>{
+    const c = CHARACTERS[key];
+    const isSelected = progress.character===key;
+    return `<div class="char-card ${isSelected?'selected':''}">
+      <div class="char-avatar">${c.avatar}</div>
+      <div class="char-name">${c.name}</div>
+      <div class="char-name-ar">${c.nameAr} · ${c.role}</div>
+      <div class="char-stats">
+        ${["speed","power","skill"].map(k=>`<div class="stat"><span>${k.toUpperCase()}</span><div class="bar"><i style="width:${c.stats[k]}%"></i></div></div>`).join("")}
+      </div>
+      <div class="char-perk">${c.perk}</div>
+      <button class="btn ${isSelected?'btn-secondary':'btn-primary'} char-select-btn" data-char="${key}" ${isSelected?'disabled':''}>${isSelected?'✓ المختار حالياً':'اختيار هذا الطيار'}</button>
+    </div>`;
+  }).join("");
+  container.querySelectorAll(".char-select-btn:not([disabled])").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      progress.character = btn.dataset.char;
+      saveProgress();
+      buildCharacterView();
+    });
+  });
+}
+
+/* ---------- achievements view ---------- */
+function buildAchievements(){
+  const completed = Object.keys(progress.stars).filter(k=>progress.stars[k]>0).length;
+  document.getElementById("statLevels").textContent = `${completed}/${LEVELS.length}`;
+  document.getElementById("statStars").textContent = `${totalStars(progress)}/${LEVELS.length*3}`;
+  document.getElementById("statCombo").textContent = `${progress.maxCombo||0}x`;
+
+  const grid = document.getElementById("badgeGrid");
+  grid.innerHTML = ACHIEVEMENTS.map(a=>{
+    const unlocked = a.check(progress);
+    return `<div class="badge-card ${unlocked?'unlocked':''}">
+      <div class="badge-icon">${unlocked?a.icon:'🔒'}</div>
+      <div class="badge-title">${a.title}</div>
+      <div class="badge-desc">${a.desc}</div>
+    </div>`;
+  }).join("");
+}
+
+/* ---------- nav wiring ---------- */
 document.getElementById("backBtn").addEventListener("click", ()=>{
   hideModal();
-  buildLevelPath();
+  buildMapView();
   showView("mapView");
+  setNavActive("mapView");
 });
 document.getElementById("mapBtn").addEventListener("click", ()=>{
   hideModal();
-  buildLevelPath();
+  buildMapView();
   showView("mapView");
+  setNavActive("mapView");
 });
 document.getElementById("retryBtn").addEventListener("click", ()=>{
   hideModal();
@@ -513,5 +772,22 @@ document.getElementById("nextBtn").addEventListener("click", ()=>{
   if(currentLevel < LEVELS.length) startLevel(currentLevel+1);
 });
 
-buildLevelPath();
+function setNavActive(viewId){
+  document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active", b.dataset.view===viewId));
+}
+
+document.querySelectorAll(".nav-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    const view = btn.dataset.view;
+    setNavActive(view);
+    if(view==="mapView") buildMapView();
+    if(view==="characterView") buildCharacterView();
+    if(view==="achievementsView") buildAchievements();
+    showView(view);
+  });
+});
+
+/* ---------- init ---------- */
+buildMapView();
+buildCharacterView();
 })();

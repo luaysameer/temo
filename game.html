@@ -48,7 +48,7 @@ body{
 }
 @keyframes twinkle{from{opacity:.35}to{opacity:.75}}
 
-.app{position:relative;z-index:1;width:100%;max-width:460px;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:18px 14px 30px;}
+.app{position:relative;z-index:1;width:100%;max-width:460px;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:18px 14px 100px;}
 
 /* ===== shared ===== */
 .view{display:none;width:100%;flex-direction:column;align-items:center;animation:fadeIn .35s ease;}
@@ -66,6 +66,16 @@ body{
   text-shadow:0 0 8px var(--o1),0 0 22px var(--o2);
 }
 .game-sub{font-size:11px;color:var(--b5);letter-spacing:3px;text-align:center;margin-bottom:18px;opacity:.7}
+
+/* ===== SECTOR TABS ===== */
+.sector-tabs{display:flex;gap:8px;width:100%;margin-bottom:14px;}
+.sector-tab{
+  flex:1;padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.04);color:var(--b5);font-weight:900;font-size:12px;
+  font-family:"Orbitron",sans-serif;letter-spacing:1px;cursor:pointer;
+}
+.sector-tab.active{background:linear-gradient(135deg,var(--o1),var(--b4));color:#fff;border-color:transparent;}
+.sector-tab.locked{opacity:.4;cursor:not-allowed;}
 
 /* ===== MAP VIEW ===== */
 .sector-banner{
@@ -89,6 +99,11 @@ body{
   content:"";position:absolute;width:80px;height:14px;border:2px solid rgba(168,200,240,.5);
   border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-20deg);
 }
+.planet-icon.planet-2{
+  background:radial-gradient(circle at 32% 28%,#FFD58A,#C2247A 60%,#5A1240 100%);
+  box-shadow:0 0 18px rgba(224,51,126,.6),inset -8px -8px 16px rgba(0,0,0,.35);
+}
+.planet-icon.planet-2::before{border-color:rgba(255,213,138,.5);}
 .sector-info{flex:1;}
 .sector-name{font-family:"Orbitron",sans-serif;font-weight:900;font-size:13px;letter-spacing:2px;color:var(--o2);}
 .sector-title{font-size:18px;font-weight:900;color:#fff;margin-top:2px;}
@@ -131,6 +146,59 @@ body{
   border:1px solid rgba(255,255,255,.12);padding:8px 18px;border-radius:99px;
 }
 
+/* ===== CHARACTER VIEW ===== */
+.char-card{
+  width:100%;border-radius:22px;padding:22px 20px;margin-bottom:16px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.10);
+  box-shadow:0 18px 40px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.08);
+  text-align:center;position:relative;
+}
+.char-card.selected{border-color:var(--o1);box-shadow:0 0 0 1px var(--o1),0 18px 40px rgba(0,0,0,.4),0 0 24px rgba(243,118,35,.3);}
+.char-avatar{font-size:54px;margin-bottom:8px;}
+.char-name{font-family:"Orbitron",sans-serif;font-weight:900;font-size:16px;color:#fff;}
+.char-name-ar{font-size:12px;color:var(--b5);margin:4px 0 14px;}
+.char-stats{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+.stat{display:flex;align-items:center;gap:10px;font-size:10px;font-weight:900;color:var(--b5);}
+.stat span{width:54px;text-align:left;letter-spacing:1px;direction:ltr;}
+.stat .bar{flex:1;height:6px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;}
+.stat .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--o1),var(--b4));border-radius:99px;}
+.char-perk{
+  font-size:12px;font-weight:700;color:var(--o2);background:rgba(243,118,35,.10);
+  border:1px solid rgba(243,118,35,.25);border-radius:12px;padding:10px;margin-bottom:14px;
+}
+
+/* ===== ACHIEVEMENTS VIEW ===== */
+.stats-row{display:flex;gap:10px;width:100%;margin-bottom:16px;}
+.stat-card{flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:12px;text-align:center;}
+.stat-card b{display:block;font-family:"Orbitron",sans-serif;font-size:18px;color:var(--o1);margin-bottom:2px;}
+.stat-card span{font-size:10px;color:var(--b5);letter-spacing:1px;}
+.badge-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;width:100%;}
+.badge-card{
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.10);border-radius:16px;
+  padding:14px;text-align:center;opacity:.45;
+}
+.badge-card.unlocked{opacity:1;border-color:rgba(243,118,35,.3);box-shadow:0 0 16px rgba(243,118,35,.15);}
+.badge-icon{font-size:30px;margin-bottom:6px;}
+.badge-title{font-size:12px;font-weight:900;color:#fff;margin-bottom:4px;}
+.badge-desc{font-size:10px;color:var(--b5);line-height:1.4;}
+
+/* ===== BOTTOM NAV ===== */
+.bottom-nav{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:460px;display:flex;z-index:40;
+  background:rgba(15,37,72,.85);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  border-top:1px solid rgba(255,255,255,.10);
+  padding:8px 8px calc(8px + env(safe-area-inset-bottom));
+}
+.nav-btn{
+  flex:1;background:none;border:none;color:rgba(255,255,255,.45);
+  font-size:11px;font-weight:700;padding:8px 4px;border-radius:12px;
+  display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;
+  font-family:"Tajawal",sans-serif;
+}
+.nav-btn span{font-size:20px;}
+.nav-btn.active{color:var(--o1);background:rgba(243,118,35,.10);}
+
 /* ===== GAME VIEW ===== */
 .game-header{
   width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;
@@ -143,8 +211,9 @@ body{
 .level-pill{
   font-family:"Orbitron",sans-serif;font-weight:900;font-size:13px;letter-spacing:2px;color:#fff;
   background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);border-radius:99px;
-  padding:10px 18px;
+  padding:8px 18px;display:flex;align-items:center;gap:8px;
 }
+.char-badge{font-size:18px;}
 .moves-pill{
   font-weight:900;font-size:15px;color:var(--o1);
   background:rgba(243,118,35,.12);border:1px solid rgba(243,118,35,.3);border-radius:99px;
@@ -155,7 +224,7 @@ body{
 
 .score-bar{
   width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);
-  border-radius:14px;padding:10px 14px;margin-bottom:14px;position:relative;overflow:hidden;
+  border-radius:14px;padding:10px 14px;margin-bottom:10px;position:relative;overflow:hidden;
 }
 .score-track{height:10px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;position:relative;margin-top:6px;}
 .score-fill{
@@ -168,6 +237,20 @@ body{
 .star-marks{position:absolute;top:6px;height:10px;display:flex;align-items:center;font-size:10px;}
 .star-marks span{position:absolute;transform:translateX(50%);color:rgba(255,255,255,.35);}
 .star-marks span.reached{color:var(--o1);text-shadow:0 0 6px var(--o1);}
+
+/* power-ups */
+.power-row{display:flex;gap:10px;width:100%;margin-bottom:12px;}
+.power-btn{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:10px;border-radius:14px;border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.05);color:#fff;font-weight:900;font-size:13px;cursor:pointer;
+  font-family:"Tajawal",sans-serif;
+}
+.power-btn .pcount{
+  background:rgba(255,255,255,.12);border-radius:99px;padding:2px 9px;font-size:11px;min-width:18px;text-align:center;
+}
+.power-btn:disabled{opacity:.35;cursor:not-allowed;}
+.power-btn.armed{border-color:var(--o1);box-shadow:0 0 14px rgba(243,118,35,.5);background:rgba(243,118,35,.15);}
 
 .board-frame{
   width:100%;border-radius:22px;padding:10px;
@@ -195,7 +278,7 @@ body{
   width:80%;height:80%;position:relative;
   background:linear-gradient(135deg,var(--c1),var(--c2));
   box-shadow:0 4px 8px rgba(0,0,0,.4), inset -3px -3px 7px rgba(0,0,0,.3), inset 3px 3px 7px rgba(255,255,255,.55), 0 0 12px var(--c1);
-  transition:transform .22s cubic-bezier(.34,1.56,.64,1), box-shadow .15s;
+  transition:transform .22s cubic-bezier(.34,1.56,.64,1), box-shadow .15s, filter .35s;
 }
 .gem-shine{position:absolute;top:12%;left:18%;width:32%;height:24%;background:rgba(255,255,255,.7);border-radius:50%;filter:blur(2px);}
 .gem-0{--c1:var(--g0-1);--c2:var(--g0-2);}
@@ -210,6 +293,12 @@ body{
 .gem-3 .gem-shape{clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);}
 .gem-4 .gem-shape{border-radius:50% 50% 50% 6%;transform:rotate(-45deg);}
 .gem-5 .gem-shape{border-radius:20%;}
+.gem.frozen .gem-shape{filter:saturate(.3) brightness(1.2);}
+.ice-overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(190,235,255,.6),rgba(255,255,255,.25));
+  border:1px solid rgba(255,255,255,.65);box-shadow:inset 0 0 10px rgba(255,255,255,.7);
+}
 
 .combo-layer{position:absolute;inset:0;pointer-events:none;z-index:5;}
 .combo-pop{
@@ -221,7 +310,7 @@ body{
 @keyframes comboUp{0%{opacity:0;transform:translate(-50%,10px) scale(.7)}20%{opacity:1;transform:translate(-50%,-10px) scale(1.1)}100%{opacity:0;transform:translate(-50%,-50px) scale(1)}}
 
 .toast{
-  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
   background:rgba(15,37,72,.95);border:1px solid rgba(255,255,255,.15);
   color:#fff;font-size:13px;font-weight:700;padding:10px 20px;border-radius:99px;
   box-shadow:0 8px 24px rgba(0,0,0,.5);z-index:50;animation:fadeUp .3s ease;
@@ -257,6 +346,7 @@ body{
   transition:transform .15s;
 }
 .btn:active{transform:scale(.96)}
+.btn:disabled{opacity:.6;cursor:default;}
 .btn-primary{
   background:linear-gradient(135deg,var(--o1) 0%,var(--o2) 50%,var(--b4) 100%);
   box-shadow:0 4px 18px rgba(243,118,35,.4),inset 0 1px 0 rgba(255,255,255,.2);
@@ -278,12 +368,14 @@ body{
     <div class="game-title">TEMO <span>CRUSH</span></div>
     <div class="game-sub">GALACTIC MATCH-3</div>
 
+    <div class="sector-tabs" id="sectorTabs"></div>
+
     <div class="sector-banner">
-      <div class="planet-icon"></div>
+      <div class="planet-icon" id="planetIcon"></div>
       <div class="sector-info">
-        <div class="sector-name">SECTOR 1</div>
-        <div class="sector-title">حزام الكويكبات</div>
-        <div class="sector-meta">Asteroid Belt · 20 مرحلة</div>
+        <div class="sector-name" id="sectorName">SECTOR 1</div>
+        <div class="sector-title" id="sectorTitleAr">حزام الكويكبات</div>
+        <div class="sector-meta" id="sectorMeta">Asteroid Belt · 20 مرحلة</div>
       </div>
     </div>
 
@@ -291,11 +383,30 @@ body{
     <a class="home-link" href="index.html">🏠 TEMO Home</a>
   </div>
 
+  <!-- ===== CHARACTER VIEW ===== -->
+  <div class="view" id="characterView">
+    <div class="game-title">TEMO <span>CRUSH</span></div>
+    <div class="game-sub">اختر طيارك · CHOOSE YOUR PILOT</div>
+    <div id="charCards" style="width:100%"></div>
+  </div>
+
+  <!-- ===== ACHIEVEMENTS VIEW ===== -->
+  <div class="view" id="achievementsView">
+    <div class="game-title">TEMO <span>CRUSH</span></div>
+    <div class="game-sub">الإنجازات · ACHIEVEMENTS</div>
+    <div class="stats-row">
+      <div class="stat-card"><b id="statLevels">0/40</b><span>المراحل</span></div>
+      <div class="stat-card"><b id="statStars">0/120</b><span>النجوم</span></div>
+      <div class="stat-card"><b id="statCombo">0x</b><span>أعلى كومبو</span></div>
+    </div>
+    <div class="badge-grid" id="badgeGrid"></div>
+  </div>
+
   <!-- ===== GAME VIEW ===== -->
   <div class="view" id="gameView">
     <div class="game-header">
       <button class="icon-btn" id="backBtn">‹</button>
-      <div class="level-pill">LEVEL <span id="levelNum">1</span></div>
+      <div class="level-pill"><span class="char-badge" id="charBadge">👨‍🚀</span> LEVEL <span id="levelNum">1</span></div>
       <div class="moves-pill" id="movesPill">🎯 <span id="movesLeft">0</span></div>
     </div>
 
@@ -307,6 +418,11 @@ body{
       </div>
     </div>
 
+    <div class="power-row">
+      <button class="power-btn" id="hammerBtn">🔨 تحطيم <span class="pcount">1</span></button>
+      <button class="power-btn" id="shuffleBtn">🔀 خلط <span class="pcount">1</span></button>
+    </div>
+
     <div class="board-frame">
       <div class="board-wrap" id="boardWrap">
         <div class="board-bg" id="boardBg"></div>
@@ -316,6 +432,13 @@ body{
     </div>
   </div>
 
+</div>
+
+<!-- ===== BOTTOM NAV ===== -->
+<div class="bottom-nav" id="bottomNav">
+  <button class="nav-btn active" data-view="mapView"><span>🪐</span>المراحل</button>
+  <button class="nav-btn" data-view="characterView"><span>👤</span>الطيار</button>
+  <button class="nav-btn" data-view="achievementsView"><span>🏆</span>الإنجازات</button>
 </div>
 
 <!-- ===== RESULT MODAL ===== -->
