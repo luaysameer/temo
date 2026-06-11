@@ -54,9 +54,20 @@ const LEVELS_S2 = [
 const LEVELS = LEVELS_S1.concat(LEVELS_S2);
 
 const SECTORS = [
-  {id:1, name:"SECTOR 1", title:"حزام الكويكبات", sub:"Asteroid Belt", start:1, end:20, planetClass:"planet-1"},
-  {id:2, name:"SECTOR 2", title:"عملاق الغاز",   sub:"Gas Giant",      start:21, end:40, planetClass:"planet-2"},
+  {id:1, name:"SECTOR 1", title:"حزام الكويكبات", sub:"Asteroid Belt", start:1, end:20, planetClass:"planet-1",
+   feature:"⚡ بدون عوائق - مثالي لتعلم الأساسيات",
+   tagline:"ابدأ رحلتك بين حقول الكويكبات!"},
+  {id:2, name:"SECTOR 2", title:"عملاق الغاز",   sub:"Gas Giant",      start:21, end:40, planetClass:"planet-2",
+   feature:"❄️ جواهر متجمدة - تحتاج ضربتين للكسر",
+   tagline:"اخترق العاصفة الجليدية لعملاق الغاز!"},
 ];
+
+const BOOSTERS = {
+  neonwave:   {icon:"🌊", name:"Neon Wave",   nameAr:"موجة نيون",      cost:80,  desc:"يمسح صفاً كاملاً من الجواهر دفعة واحدة"},
+  supergem:   {icon:"💎", name:"Super Gem",   nameAr:"الجوهرة الخارقة", cost:130, desc:"يدمر كل الجواهر من نفس نوع الجوهرة المستهدفة"},
+  starburst:  {icon:"🌟", name:"Star Burst",  nameAr:"الانفجار النجمي", cost:90,  desc:"يفجر منطقة 3×3 حول الجوهرة المستهدفة"},
+  gemconvert: {icon:"🔄", name:"Gem Convert", nameAr:"تحويل الجواهر",   cost:100, desc:"يحوّل الجواهر النادرة لتفعيل سلسلة مطابقات ضخمة"},
+};
 
 const CHARACTERS = {
   kaelen: {
@@ -97,6 +108,7 @@ let gemEls = new Map();
 let currentSector = 1;
 let powerCharges = {hammer:0, shuffle:0};
 let hammerArmed = false;
+let armedBooster = null;
 
 const boardEl = document.getElementById("board");
 const boardBgEl = document.getElementById("boardBg");
@@ -105,7 +117,7 @@ const comboLayer = document.getElementById("comboLayer");
 
 /* ---------- progress persistence ---------- */
 function loadProgress(){
-  const p = {unlocked:1, stars:{}, best:{}, character:"kaelen", maxCombo:0};
+  const p = {unlocked:1, stars:{}, best:{}, character:"kaelen", maxCombo:0, boosters:{}, stardust:0};
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
     if(raw){
@@ -113,6 +125,8 @@ function loadProgress(){
       if(saved && typeof saved === "object") Object.assign(p, saved);
       if(!p.stars) p.stars = {};
       if(!p.best) p.best = {};
+      if(!p.boosters) p.boosters = {};
+      if(!p.stardust) p.stardust = 0;
     }
   }catch(e){}
   return p;
@@ -125,6 +139,12 @@ let progress = loadProgress();
 function wait(ms){ return new Promise(r=>setTimeout(r,ms)); }
 function activeChar(){ return CHARACTERS[progress.character] || CHARACTERS.kaelen; }
 function applyCharBonus(points){ return Math.round(points * (activeChar().scoreMult||1)); }
+
+function updateCurrencyDisplays(){
+  document.querySelectorAll(".currency-val").forEach(el=>{
+    el.textContent = progress.stardust||0;
+  });
+}
 
 /* ---------- board helpers ---------- */
 function randomTypeNoMatch(r,c,colors){
@@ -498,9 +518,151 @@ async function useShuffle(){
 document.getElementById("hammerBtn").addEventListener("click", ()=>{
   if(busy || powerCharges.hammer<=0) return;
   hammerArmed = !hammerArmed;
+  armedBooster = null;
   updatePowerUI();
+  updateBoosterUI();
 });
 document.getElementById("shuffleBtn").addEventListener("click", useShuffle);
+
+/* ---------- boosters ---------- */
+function buildBoosterRow(){
+  const row = document.getElementById("boosterRow");
+  row.innerHTML = Object.keys(BOOSTERS).map(key=>{
+    const b = BOOSTERS[key];
+    const owned = progress.boosters[key]||0;
+    return `<button class="booster-btn" data-booster="${key}" ${owned<=0?'disabled':''}>
+      <span class="picon">${b.icon}</span>
+      <span class="pcount">${owned}</span>
+    </button>`;
+  }).join("");
+  row.querySelectorAll(".booster-btn").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const key = btn.dataset.booster;
+      if(busy || (progress.boosters[key]||0)<=0) return;
+      if(key==="gemconvert"){
+        useGemConvert();
+        return;
+      }
+      armedBooster = (armedBooster===key) ? null : key;
+      hammerArmed = false;
+      updatePowerUI();
+      updateBoosterUI();
+    });
+  });
+  updateBoosterUI();
+}
+
+function updateBoosterUI(){
+  const row = document.getElementById("boosterRow");
+  if(!row) return;
+  row.querySelectorAll(".booster-btn").forEach(btn=>{
+    const key = btn.dataset.booster;
+    const owned = progress.boosters[key]||0;
+    btn.querySelector(".pcount").textContent = owned;
+    btn.disabled = owned<=0 || busy;
+    btn.classList.toggle("armed", armedBooster===key);
+  });
+}
+
+async function useBooster(key, r, c){
+  if(busy || (progress.boosters[key]||0)<=0) return;
+  armedBooster = null;
+  progress.boosters[key] = (progress.boosters[key]||0) - 1;
+  saveProgress();
+  busy = true;
+  updatePowerUI();
+  updateBoosterUI();
+
+  const lvl = LEVELS[currentLevel-1];
+  const colors = lvl.colors;
+  const cells = new Set();
+
+  if(key==="neonwave"){
+    for(let cc=0; cc<COLS; cc++) cells.add(r+","+cc);
+  }else if(key==="supergem"){
+    const targetType = board[r][c].type;
+    for(let rr=0; rr<ROWS; rr++) for(let cc=0; cc<COLS; cc++){
+      if(board[rr][cc] && board[rr][cc].type===targetType) cells.add(rr+","+cc);
+    }
+  }else if(key==="starburst"){
+    for(let dr=-1; dr<=1; dr++) for(let dc=-1; dc<=1; dc++){
+      const rr=r+dr, cc=c+dc;
+      if(rr>=0&&rr<ROWS&&cc>=0&&cc<COLS) cells.add(rr+","+cc);
+    }
+  }
+
+  await resolveMatches(cells, colors, 1);
+
+  if(!hasPossibleMove()){
+    await wait(250);
+    showToast("لا توجد حركات متاحة - يتم الخلط 🔄");
+    do{ buildBoard(colors, lvl.frozen); }while(!hasPossibleMove());
+    render();
+    await wait(450);
+  }
+  checkEnd();
+  busy = false;
+  updatePowerUI();
+  updateBoosterUI();
+}
+
+async function useGemConvert(){
+  if(busy || (progress.boosters.gemconvert||0)<=0) return;
+  progress.boosters.gemconvert--;
+  saveProgress();
+  busy = true;
+  updatePowerUI();
+  updateBoosterUI();
+
+  const lvl = LEVELS[currentLevel-1];
+  const colors = lvl.colors;
+
+  const counts = {};
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const t = board[r][c].type;
+    counts[t] = (counts[t]||0)+1;
+  }
+  let maxType=0, maxCount=-1, minType=0, minCount=Infinity;
+  for(let t=0;t<colors;t++){
+    const cnt = counts[t]||0;
+    if(cnt>maxCount){ maxCount=cnt; maxType=t; }
+    if(cnt<minCount){ minCount=cnt; minType=t; }
+  }
+
+  if(minType===maxType){
+    showToast("لا يوجد ما يمكن تحويله 🔄");
+    busy = false;
+    updatePowerUI();
+    updateBoosterUI();
+    return;
+  }
+
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const cell = board[r][c];
+    if(cell.type===minType){
+      cell.type = maxType;
+      const el = gemEls.get(cell.id);
+      if(el) el.className = el.className.replace(/gem-\d+/, `gem-${maxType}`);
+    }
+  }
+  render();
+  await wait(280);
+
+  const matches = findMatches();
+  await resolveMatches(matches, colors, 1);
+
+  if(!hasPossibleMove()){
+    await wait(250);
+    showToast("لا توجد حركات متاحة - يتم الخلط 🔄");
+    do{ buildBoard(colors, lvl.frozen); }while(!hasPossibleMove());
+    render();
+    await wait(450);
+  }
+  checkEnd();
+  busy = false;
+  updatePowerUI();
+  updateBoosterUI();
+}
 
 /* ---------- input ---------- */
 function cellFromEvent(e){
@@ -525,6 +687,12 @@ boardEl.addEventListener("pointerup", (e)=>{
   if(hammerArmed){
     pointerStart = null;
     useHammer(startCell.r, startCell.c);
+    return;
+  }
+
+  if(armedBooster){
+    pointerStart = null;
+    useBooster(armedBooster, startCell.r, startCell.c);
     return;
   }
 
@@ -586,7 +754,9 @@ function onWin(lvl){
   if(currentLevel === progress.unlocked && currentLevel < LEVELS.length){
     progress.unlocked = currentLevel+1;
   }
+  progress.stardust = (progress.stardust||0) + stars*20;
   saveProgress();
+  updateCurrencyDisplays();
 
   const isSectorEnd = currentLevel===20 || currentLevel===LEVELS.length;
   document.getElementById("modalIcon").textContent = isSectorEnd ? "☄️" : "🏆";
@@ -633,6 +803,7 @@ function startLevel(n){
   target = lvl.target;
   powerCharges = {hammer:1, shuffle:1};
   hammerArmed = false;
+  armedBooster = null;
 
   for(const [,el] of gemEls) el.remove();
   gemEls.clear();
@@ -649,6 +820,7 @@ function startLevel(n){
   render();
   updateHud();
   updatePowerUI();
+  buildBoosterRow();
 }
 
 /* ---------- map / navigation ---------- */
@@ -703,6 +875,9 @@ function buildMapView(){
   document.getElementById("sectorTitleAr").textContent = sector.title;
   document.getElementById("sectorMeta").textContent = `${sector.sub} · ${sector.end-sector.start+1} مرحلة`;
   document.getElementById("planetIcon").className = "planet-icon " + sector.planetClass;
+  document.getElementById("sectorFeature").textContent = sector.feature;
+  document.getElementById("sectorTagline").textContent = sector.tagline;
+  updateCurrencyDisplays();
   buildLevelPath(sector);
 }
 
@@ -728,6 +903,38 @@ function buildCharacterView(){
       progress.character = btn.dataset.char;
       saveProgress();
       buildCharacterView();
+    });
+  });
+}
+
+/* ---------- shop view ---------- */
+function buildShopView(){
+  updateCurrencyDisplays();
+  const container = document.getElementById("shopCards");
+  container.innerHTML = Object.keys(BOOSTERS).map(key=>{
+    const b = BOOSTERS[key];
+    const owned = progress.boosters[key]||0;
+    const canAfford = (progress.stardust||0) >= b.cost;
+    return `<div class="shop-card">
+      <div class="shop-icon">${b.icon}</div>
+      <div class="shop-info">
+        <div class="shop-name">${b.nameAr}</div>
+        <div class="shop-name-en">${b.name.toUpperCase()}</div>
+        <div class="shop-desc">${b.desc}</div>
+        <div class="shop-owned">تملك: ${owned}</div>
+      </div>
+      <button class="shop-buy" data-booster="${key}" ${canAfford?'':'disabled'}>⭐ ${b.cost}</button>
+    </div>`;
+  }).join("");
+  container.querySelectorAll(".shop-buy:not([disabled])").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const key = btn.dataset.booster;
+      const cost = BOOSTERS[key].cost;
+      if((progress.stardust||0) < cost) return;
+      progress.stardust -= cost;
+      progress.boosters[key] = (progress.boosters[key]||0) + 1;
+      saveProgress();
+      buildShopView();
     });
   });
 }
@@ -782,6 +989,7 @@ document.querySelectorAll(".nav-btn").forEach(btn=>{
     setNavActive(view);
     if(view==="mapView") buildMapView();
     if(view==="characterView") buildCharacterView();
+    if(view==="shopView") buildShopView();
     if(view==="achievementsView") buildAchievements();
     showView(view);
   });
