@@ -51,7 +51,30 @@ const LEVELS_S2 = [
   {target:60000, moves:14, colors:6, frozen:13}, // 40 - sector boss
 ];
 
-const LEVELS = LEVELS_S1.concat(LEVELS_S2);
+const LEVELS_S3 = [
+  {target:55000,  moves:24, colors:6, frozen:0, comet:1},   // 41
+  {target:60000,  moves:23, colors:6, frozen:0, comet:1},   // 42
+  {target:65000,  moves:23, colors:6, frozen:0, comet:2},   // 43
+  {target:70000,  moves:22, colors:6, frozen:0, comet:2},   // 44
+  {target:76000,  moves:22, colors:6, frozen:0, comet:3},   // 45
+  {target:82000,  moves:21, colors:6, frozen:0, comet:3},   // 46
+  {target:88000,  moves:21, colors:6, frozen:0, comet:4},   // 47
+  {target:95000,  moves:20, colors:6, frozen:0, comet:4},   // 48
+  {target:102000, moves:20, colors:6, frozen:0, comet:5},   // 49
+  {target:110000, moves:19, colors:6, frozen:0, comet:5},   // 50
+  {target:118000, moves:19, colors:6, frozen:0, comet:6},   // 51
+  {target:126000, moves:18, colors:6, frozen:0, comet:6},   // 52
+  {target:135000, moves:18, colors:6, frozen:0, comet:7},   // 53
+  {target:144000, moves:17, colors:6, frozen:0, comet:7},   // 54
+  {target:154000, moves:17, colors:6, frozen:0, comet:8},   // 55
+  {target:165000, moves:16, colors:6, frozen:0, comet:8},   // 56
+  {target:176000, moves:16, colors:6, frozen:0, comet:9},   // 57
+  {target:188000, moves:15, colors:6, frozen:0, comet:9},   // 58
+  {target:200000, moves:15, colors:6, frozen:0, comet:10},  // 59
+  {target:220000, moves:14, colors:6, frozen:0, comet:10},  // 60 - sector boss
+];
+
+const LEVELS = LEVELS_S1.concat(LEVELS_S2).concat(LEVELS_S3);
 
 const SECTORS = [
   {id:1, name:"SECTOR 1", title:"حزام الكويكبات", sub:"Asteroid Belt", start:1, end:20, planetClass:"planet-1",
@@ -60,6 +83,9 @@ const SECTORS = [
   {id:2, name:"SECTOR 2", title:"عملاق الغاز",   sub:"Gas Giant",      start:21, end:40, planetClass:"planet-2",
    feature:"❄️ جواهر متجمدة - تحتاج ضربتين للكسر",
    tagline:"اخترق العاصفة الجليدية لعملاق الغاز!"},
+  {id:3, name:"SECTOR 3", title:"النواة الشمسية", sub:"Solar Core",    start:41, end:60, planetClass:"planet-3",
+   feature:"☄️ جواهر المذنب - انفجار 3×3 تلقائي عند المطابقة",
+   tagline:"تحدَّ حرارة النواة الشمسية المتفجرة!"},
 ];
 
 const BOOSTERS = {
@@ -95,6 +121,8 @@ const ACHIEVEMENTS = [
   {icon:"✨", title:"صياد النجوم",      desc:"اجمع 20 نجمة إجمالاً",               check:p=>totalStars(p)>=20},
   {icon:"🌟", title:"نخبة المجرة",      desc:"اجمع 60 نجمة إجمالاً",               check:p=>totalStars(p)>=60},
   {icon:"🚀", title:"كابتن مخضرم",      desc:"أكمل 10 مراحل",                     check:p=>Object.keys(p.stars).filter(k=>p.stars[k]>0).length>=10},
+  {icon:"☀️", title:"غازي النواة الشمسية", desc:"أكمل النواة الشمسية (Sector 3)",  check:p=>(p.stars[60]||0)>=1},
+  {icon:"👑", title:"أسطورة المجرة",    desc:"اجمع 120 نجمة إجمالاً",              check:p=>totalStars(p)>=120},
 ];
 
 let board = [];
@@ -158,13 +186,13 @@ function randomTypeNoMatch(r,c,colors){
   return t;
 }
 
-function buildBoard(colors, frozenCount){
+function buildBoard(colors, frozenCount, cometCount){
   board = [];
   for(let r=0;r<ROWS;r++){
     board.push([]);
     for(let c=0;c<COLS;c++){
       const type = randomTypeNoMatch(r,c,colors);
-      board[r][c] = {id: nextId++, type, frozen:0, spawnFrom: r-ROWS};
+      board[r][c] = {id: nextId++, type, frozen:0, comet:false, spawnFrom: r-ROWS};
     }
   }
   let placed=0, attempts=0;
@@ -172,6 +200,12 @@ function buildBoard(colors, frozenCount){
     attempts++;
     const r = Math.floor(Math.random()*ROWS), c = Math.floor(Math.random()*COLS);
     if(!board[r][c].frozen){ board[r][c].frozen = 1; placed++; }
+  }
+  placed=0; attempts=0;
+  while(placed < (cometCount||0) && attempts < 500){
+    attempts++;
+    const r = Math.floor(Math.random()*ROWS), c = Math.floor(Math.random()*COLS);
+    if(!board[r][c].frozen && !board[r][c].comet){ board[r][c].comet = true; placed++; }
   }
 }
 
@@ -297,9 +331,11 @@ function render(){
         el.className = `gem gem-${cell.type}`;
         let html = '<div class="gem-shape"><div class="gem-shine"></div>';
         if(cell.frozen>0) html += '<div class="ice-overlay"></div>';
+        if(cell.comet) html += '<div class="comet-overlay">☄️</div>';
         html += '</div>';
         el.innerHTML = html;
         if(cell.frozen>0) el.classList.add("frozen");
+        if(cell.comet) el.classList.add("comet");
         el.style.width = cellSize+"px";
         el.style.height = cellSize+"px";
         const startY = (cell.spawnFrom!==undefined ? cell.spawnFrom : r) * cellSize;
@@ -374,6 +410,27 @@ async function resolveMatches(matches, colors, chain){
     progress.maxCombo = chain;
     saveProgress();
   }
+
+  // comet gems explode in a 3x3 area when matched/cleared
+  const toCheck = [...matches];
+  const checked = new Set();
+  while(toCheck.length){
+    const key = toCheck.pop();
+    if(checked.has(key)) continue;
+    checked.add(key);
+    const [r,c] = key.split(",").map(Number);
+    const cell = board[r] && board[r][c];
+    if(cell && cell.comet && cell.frozen<=0){
+      for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
+        const rr=r+dr, cc=c+dc;
+        if(rr>=0&&rr<ROWS&&cc>=0&&cc<COLS){
+          const k = rr+","+cc;
+          if(!matches.has(k)){ matches.add(k); toCheck.push(k); }
+        }
+      }
+    }
+  }
+
   const count = matches.size;
   const base = count*60 + Math.max(0,count-3)*30;
   const mult = 1 + (chain-1)*0.5;
@@ -434,7 +491,7 @@ async function trySwap(r1,c1,r2,c2){
   if(!hasPossibleMove()){
     await wait(250);
     showToast("لا توجد حركات متاحة - يتم الخلط 🔄");
-    do{ buildBoard(colors, lvl.frozen); }while(!hasPossibleMove());
+    do{ buildBoard(colors, lvl.frozen, lvl.comet); }while(!hasPossibleMove());
     render();
     await wait(450);
   }
@@ -492,7 +549,7 @@ async function useHammer(r,c){
   if(!hasPossibleMove()){
     await wait(250);
     showToast("لا توجد حركات متاحة - يتم الخلط 🔄");
-    do{ buildBoard(colors, lvl.frozen); }while(!hasPossibleMove());
+    do{ buildBoard(colors, lvl.frozen, lvl.comet); }while(!hasPossibleMove());
     render();
     await wait(450);
   }
@@ -507,7 +564,7 @@ async function useShuffle(){
   powerCharges.shuffle--;
   updatePowerUI();
   const lvl = LEVELS[currentLevel-1];
-  do{ buildBoard(lvl.colors, lvl.frozen); }while(!hasPossibleMove());
+  do{ buildBoard(lvl.colors, lvl.frozen, lvl.comet); }while(!hasPossibleMove());
   render();
   showToast("تم خلط اللوحة 🔀");
   await wait(450);
@@ -596,7 +653,7 @@ async function useBooster(key, r, c){
   if(!hasPossibleMove()){
     await wait(250);
     showToast("لا توجد حركات متاحة - يتم الخلط 🔄");
-    do{ buildBoard(colors, lvl.frozen); }while(!hasPossibleMove());
+    do{ buildBoard(colors, lvl.frozen, lvl.comet); }while(!hasPossibleMove());
     render();
     await wait(450);
   }
@@ -654,7 +711,7 @@ async function useGemConvert(){
   if(!hasPossibleMove()){
     await wait(250);
     showToast("لا توجد حركات متاحة - يتم الخلط 🔄");
-    do{ buildBoard(colors, lvl.frozen); }while(!hasPossibleMove());
+    do{ buildBoard(colors, lvl.frozen, lvl.comet); }while(!hasPossibleMove());
     render();
     await wait(450);
   }
@@ -809,8 +866,8 @@ function startLevel(n){
   gemEls.clear();
   selected = null;
 
-  buildBoard(lvl.colors, lvl.frozen);
-  while(!hasPossibleMove()) buildBoard(lvl.colors, lvl.frozen);
+  buildBoard(lvl.colors, lvl.frozen, lvl.comet);
+  while(!hasPossibleMove()) buildBoard(lvl.colors, lvl.frozen, lvl.comet);
 
   document.getElementById("levelNum").textContent = n;
   document.getElementById("charBadge").textContent = activeChar().avatar;
