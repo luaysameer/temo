@@ -114,6 +114,11 @@ body{
   from{box-shadow:0 0 16px rgba(243,118,35,.55),inset -8px -8px 16px rgba(0,0,0,.35);}
   to  {box-shadow:0 0 32px rgba(243,118,35,.9),inset -8px -8px 16px rgba(0,0,0,.35);}
 }
+.planet-icon.planet-4{
+  background:radial-gradient(circle at 32% 28%,#E0C3FF,#6A4CB8 55%,#2A1A4A 100%);
+  box-shadow:0 0 18px rgba(138,90,255,.6),inset -8px -8px 16px rgba(0,0,0,.35);
+}
+.planet-icon.planet-4::before{border-color:rgba(224,195,255,.5);}
 .sector-info{flex:1;}
 .sector-name{font-family:"Orbitron",sans-serif;font-weight:900;font-size:13px;letter-spacing:2px;color:var(--o2);}
 .sector-title{font-size:18px;font-weight:900;color:#fff;margin-top:2px;}
@@ -367,6 +372,18 @@ body{
   pointer-events:none;
 }
 @keyframes cometPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.22)}}
+.gem.locked .gem-shape{filter:grayscale(.55) brightness(.7);}
+.cage-overlay{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.85em;
+  background:
+    repeating-linear-gradient(90deg, rgba(224,195,255,.45) 0 3px, transparent 3px 13px),
+    repeating-linear-gradient(0deg, rgba(224,195,255,.45) 0 3px, transparent 3px 13px);
+  border:1px solid rgba(224,195,255,.55);
+  filter:drop-shadow(0 0 4px rgba(138,90,255,.8));
+  pointer-events:none;
+}
 
 .combo-layer{position:absolute;inset:0;pointer-events:none;z-index:5;}
 .combo-pop{

@@ -74,7 +74,30 @@ const LEVELS_S3 = [
   {target:220000, moves:14, colors:6, frozen:0, comet:10},  // 60 - sector boss
 ];
 
-const LEVELS = LEVELS_S1.concat(LEVELS_S2).concat(LEVELS_S3);
+const LEVELS_S4 = [
+  {target:240000,  moves:24, colors:6, frozen:0, locked:1},   // 61
+  {target:260000,  moves:23, colors:6, frozen:0, locked:1},   // 62
+  {target:285000,  moves:23, colors:6, frozen:0, locked:2},   // 63
+  {target:310000,  moves:22, colors:6, frozen:0, locked:2},   // 64
+  {target:340000,  moves:22, colors:6, frozen:0, locked:3},   // 65
+  {target:370000,  moves:21, colors:6, frozen:0, locked:3},   // 66
+  {target:405000,  moves:21, colors:6, frozen:0, locked:4},   // 67
+  {target:440000,  moves:20, colors:6, frozen:0, locked:4},   // 68
+  {target:480000,  moves:20, colors:6, frozen:0, locked:5},   // 69
+  {target:520000,  moves:19, colors:6, frozen:0, locked:5},   // 70
+  {target:565000,  moves:19, colors:6, frozen:0, locked:6},   // 71
+  {target:610000,  moves:18, colors:6, frozen:0, locked:6},   // 72
+  {target:660000,  moves:18, colors:6, frozen:0, locked:7},   // 73
+  {target:715000,  moves:17, colors:6, frozen:0, locked:7},   // 74
+  {target:775000,  moves:17, colors:6, frozen:0, locked:8},   // 75
+  {target:840000,  moves:16, colors:6, frozen:0, locked:8},   // 76
+  {target:910000,  moves:16, colors:6, frozen:0, locked:9},   // 77
+  {target:985000,  moves:15, colors:6, frozen:0, locked:9},   // 78
+  {target:1065000, moves:15, colors:6, frozen:0, locked:10},  // 79
+  {target:1200000, moves:14, colors:6, frozen:0, locked:10},  // 80 - sector boss
+];
+
+const LEVELS = LEVELS_S1.concat(LEVELS_S2).concat(LEVELS_S3).concat(LEVELS_S4);
 
 const SECTORS = [
   {id:1, name:"SECTOR 1", title:"حزام الكويكبات", sub:"Asteroid Belt", start:1, end:20, planetClass:"planet-1",
@@ -86,6 +109,9 @@ const SECTORS = [
   {id:3, name:"SECTOR 3", title:"النواة الشمسية", sub:"Solar Core",    start:41, end:60, planetClass:"planet-3",
    feature:"☄️ جواهر المذنب - انفجار 3×3 تلقائي عند المطابقة",
    tagline:"تحدَّ حرارة النواة الشمسية المتفجرة!"},
+  {id:4, name:"SECTOR 4", title:"القمر الكريستالي", sub:"Crystal Moon", start:61, end:80, planetClass:"planet-4",
+   feature:"🔒 جواهر مقفلة - افتحها بمطابقة بجانبها مباشرة",
+   tagline:"حرر الجواهر المحبوسة في أقفاص القمر الكريستالي!"},
 ];
 
 const BOOSTERS = {
@@ -123,6 +149,8 @@ const ACHIEVEMENTS = [
   {icon:"🚀", title:"كابتن مخضرم",      desc:"أكمل 10 مراحل",                     check:p=>Object.keys(p.stars).filter(k=>p.stars[k]>0).length>=10},
   {icon:"☀️", title:"غازي النواة الشمسية", desc:"أكمل النواة الشمسية (Sector 3)",  check:p=>(p.stars[60]||0)>=1},
   {icon:"👑", title:"أسطورة المجرة",    desc:"اجمع 120 نجمة إجمالاً",              check:p=>totalStars(p)>=120},
+  {icon:"💜", title:"كاسر الأقفاص",     desc:"أكمل القمر الكريستالي (Sector 4)",   check:p=>(p.stars[80]||0)>=1},
+  {icon:"🏆", title:"بطل المجرة",       desc:"اجمع 180 نجمة إجمالاً",              check:p=>totalStars(p)>=180},
 ];
 
 let board = [];
@@ -186,13 +214,13 @@ function randomTypeNoMatch(r,c,colors){
   return t;
 }
 
-function buildBoard(colors, frozenCount, cometCount){
+function buildBoard(colors, frozenCount, cometCount, lockedCount){
   board = [];
   for(let r=0;r<ROWS;r++){
     board.push([]);
     for(let c=0;c<COLS;c++){
       const type = randomTypeNoMatch(r,c,colors);
-      board[r][c] = {id: nextId++, type, frozen:0, comet:false, spawnFrom: r-ROWS};
+      board[r][c] = {id: nextId++, type, frozen:0, comet:false, locked:false, spawnFrom: r-ROWS};
     }
   }
   let placed=0, attempts=0;
@@ -206,6 +234,12 @@ function buildBoard(colors, frozenCount, cometCount){
     attempts++;
     const r = Math.floor(Math.random()*ROWS), c = Math.floor(Math.random()*COLS);
     if(!board[r][c].frozen && !board[r][c].comet){ board[r][c].comet = true; placed++; }
+  }
+  placed=0; attempts=0;
+  while(placed < (lockedCount||0) && attempts < 500){
+    attempts++;
+    const r = Math.floor(Math.random()*ROWS), c = Math.floor(Math.random()*COLS);
+    if(!board[r][c].frozen && !board[r][c].comet && !board[r][c].locked){ board[r][c].locked = true; placed++; }
   }
 }
 
@@ -224,7 +258,7 @@ function findMatches(){
   for(let r=0;r<ROWS;r++){
     let runLen=1;
     for(let c=1;c<=COLS;c++){
-      const same = c<COLS && board[r][c] && board[r][c-1] && board[r][c].type===board[r][c-1].type;
+      const same = c<COLS && board[r][c] && board[r][c-1] && !board[r][c].locked && !board[r][c-1].locked && board[r][c].type===board[r][c-1].type;
       if(same){ runLen++; }
       else{
         if(runLen>=3) for(let k=c-runLen;k<c;k++) matched.add(r+","+k);
@@ -235,7 +269,7 @@ function findMatches(){
   for(let c=0;c<COLS;c++){
     let runLen=1;
     for(let r=1;r<=ROWS;r++){
-      const same = r<ROWS && board[r][c] && board[r-1][c] && board[r][c].type===board[r-1][c].type;
+      const same = r<ROWS && board[r][c] && board[r-1][c] && !board[r][c].locked && !board[r-1][c].locked && board[r][c].type===board[r-1][c].type;
       if(same){ runLen++; }
       else{
         if(runLen>=3) for(let k=r-runLen;k<r;k++) matched.add(k+","+c);
@@ -257,7 +291,7 @@ function applyGravity(colors){
       if(idx < colGems.length){
         board[r][c] = colGems[idx];
       }else{
-        board[r][c] = {id: nextId++, type: Math.floor(Math.random()*colors), frozen:0, spawnFrom: r-numNew};
+        board[r][c] = {id: nextId++, type: Math.floor(Math.random()*colors), frozen:0, comet:false, locked:false, spawnFrom: r-numNew};
       }
     }
   }
@@ -266,13 +300,14 @@ function applyGravity(colors){
 function hasPossibleMove(){
   for(let r=0;r<ROWS;r++){
     for(let c=0;c<COLS;c++){
-      if(c<COLS-1){
+      if(board[r][c].locked) continue;
+      if(c<COLS-1 && !board[r][c+1].locked){
         swapCells(r,c,r,c+1);
         const m = findMatches();
         swapCells(r,c,r,c+1);
         if(m.size>0) return true;
       }
-      if(r<ROWS-1){
+      if(r<ROWS-1 && !board[r+1][c].locked){
         swapCells(r,c,r+1,c);
         const m = findMatches();
         swapCells(r,c,r+1,c);
@@ -332,10 +367,12 @@ function render(){
         let html = '<div class="gem-shape"><div class="gem-shine"></div>';
         if(cell.frozen>0) html += '<div class="ice-overlay"></div>';
         if(cell.comet) html += '<div class="comet-overlay">☄️</div>';
+        if(cell.locked) html += '<div class="cage-overlay">🔒</div>';
         html += '</div>';
         el.innerHTML = html;
         if(cell.frozen>0) el.classList.add("frozen");
         if(cell.comet) el.classList.add("comet");
+        if(cell.locked) el.classList.add("locked");
         el.style.width = cellSize+"px";
         el.style.height = cellSize+"px";
         const startY = (cell.spawnFrom!==undefined ? cell.spawnFrom : r) * cellSize;
@@ -439,11 +476,37 @@ async function resolveMatches(matches, colors, chain){
   updateHud();
   showCombo(gained, chain);
 
+  // locked gems adjacent to a match get unlocked (but not cleared this turn)
+  for(const key of matches){
+    const [r,c] = key.split(",").map(Number);
+    const neighbors = [[r-1,c],[r+1,c],[r,c-1],[r,c+1]];
+    for(const [rr,cc] of neighbors){
+      if(rr<0||rr>=ROWS||cc<0||cc>=COLS) continue;
+      const ncell = board[rr][cc];
+      if(ncell && ncell.locked){
+        ncell.locked = false;
+        const nel = gemEls.get(ncell.id);
+        if(nel){
+          nel.classList.remove("locked");
+          const cage = nel.querySelector(".cage-overlay");
+          if(cage) cage.remove();
+        }
+      }
+    }
+  }
+
   for(const key of matches){
     const [r,c] = key.split(",").map(Number);
     const cell = board[r][c];
     const el = gemEls.get(cell.id);
-    if(cell.frozen>0){
+    if(cell.locked){
+      cell.locked = false;
+      if(el){
+        el.classList.remove("locked");
+        const cage = el.querySelector(".cage-overlay");
+        if(cage) cage.remove();
+      }
+    }else if(cell.frozen>0){
       cell.frozen--;
       if(el){
         el.classList.remove("frozen");
@@ -467,6 +530,7 @@ async function trySwap(r1,c1,r2,c2){
   if(busy) return;
   if(r2<0||r2>=ROWS||c2<0||c2>=COLS) return;
   if(!isAdjacent({r:r1,c:c1},{r:r2,c:c2})) return;
+  if(board[r1][c1].locked || board[r2][c2].locked) return;
   busy = true;
   const lvl = LEVELS[currentLevel-1];
   const colors = lvl.colors;
@@ -491,7 +555,7 @@ async function trySwap(r1,c1,r2,c2){
   if(!hasPossibleMove()){
     await wait(250);
     showToast("لا توجد حركات متاحة - يتم الخلط 🔄");
-    do{ buildBoard(colors, lvl.frozen, lvl.comet); }while(!hasPossibleMove());
+    do{ buildBoard(colors, lvl.frozen, lvl.comet, lvl.locked); }while(!hasPossibleMove());
     render();
     await wait(450);
   }
@@ -526,7 +590,15 @@ async function useHammer(r,c){
   updateHud();
   showCombo(gained, 1);
 
-  if(cell.frozen>0){
+  if(cell.locked){
+    cell.locked = false;
+    const el = gemEls.get(cell.id);
+    if(el){
+      el.classList.remove("locked");
+      const cage = el.querySelector(".cage-overlay");
+      if(cage) cage.remove();
+    }
+  }else if(cell.frozen>0){
     cell.frozen--;
     const el = gemEls.get(cell.id);
     if(el){
@@ -549,7 +621,7 @@ async function useHammer(r,c){
   if(!hasPossibleMove()){
     await wait(250);
     showToast("لا توجد حركات متاحة - يتم الخلط 🔄");
-    do{ buildBoard(colors, lvl.frozen, lvl.comet); }while(!hasPossibleMove());
+    do{ buildBoard(colors, lvl.frozen, lvl.comet, lvl.locked); }while(!hasPossibleMove());
     render();
     await wait(450);
   }
@@ -564,7 +636,7 @@ async function useShuffle(){
   powerCharges.shuffle--;
   updatePowerUI();
   const lvl = LEVELS[currentLevel-1];
-  do{ buildBoard(lvl.colors, lvl.frozen, lvl.comet); }while(!hasPossibleMove());
+  do{ buildBoard(lvl.colors, lvl.frozen, lvl.comet, lvl.locked); }while(!hasPossibleMove());
   render();
   showToast("تم خلط اللوحة 🔀");
   await wait(450);
@@ -653,7 +725,7 @@ async function useBooster(key, r, c){
   if(!hasPossibleMove()){
     await wait(250);
     showToast("لا توجد حركات متاحة - يتم الخلط 🔄");
-    do{ buildBoard(colors, lvl.frozen, lvl.comet); }while(!hasPossibleMove());
+    do{ buildBoard(colors, lvl.frozen, lvl.comet, lvl.locked); }while(!hasPossibleMove());
     render();
     await wait(450);
   }
@@ -711,7 +783,7 @@ async function useGemConvert(){
   if(!hasPossibleMove()){
     await wait(250);
     showToast("لا توجد حركات متاحة - يتم الخلط 🔄");
-    do{ buildBoard(colors, lvl.frozen, lvl.comet); }while(!hasPossibleMove());
+    do{ buildBoard(colors, lvl.frozen, lvl.comet, lvl.locked); }while(!hasPossibleMove());
     render();
     await wait(450);
   }
@@ -866,8 +938,8 @@ function startLevel(n){
   gemEls.clear();
   selected = null;
 
-  buildBoard(lvl.colors, lvl.frozen, lvl.comet);
-  while(!hasPossibleMove()) buildBoard(lvl.colors, lvl.frozen, lvl.comet);
+  buildBoard(lvl.colors, lvl.frozen, lvl.comet, lvl.locked);
+  while(!hasPossibleMove()) buildBoard(lvl.colors, lvl.frozen, lvl.comet, lvl.locked);
 
   document.getElementById("levelNum").textContent = n;
   document.getElementById("charBadge").textContent = activeChar().avatar;
