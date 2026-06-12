@@ -1224,6 +1224,13 @@ document.querySelectorAll(".nav-btn").forEach(btn=>{
   });
 });
 
+/* ---------- splash ---------- */
+const splashEl = document.getElementById("splash");
+document.getElementById("splashEnter").addEventListener("click", ()=>{
+  splashEl.classList.add("gone");
+  setTimeout(()=>splashEl.remove(), 700);
+});
+
 /* ---------- init ---------- */
 buildMapView();
 buildCharacterView();
