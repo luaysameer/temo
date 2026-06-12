@@ -198,6 +198,8 @@ const boardEl = document.getElementById("board");
 const boardBgEl = document.getElementById("boardBg");
 const boardWrap = document.getElementById("boardWrap");
 const comboLayer = document.getElementById("comboLayer");
+const boardFrameEl = document.querySelector(".board-frame");
+const confettiLayer = document.getElementById("confettiLayer");
 
 /* ---------- progress persistence ---------- */
 function loadProgress(){
@@ -478,6 +480,46 @@ function showToast(msg){
   setTimeout(()=>el.remove(), 1800);
 }
 
+function spawnParticles(r, c, type){
+  const cx = c*cellSize + cellSize/2;
+  const cy = r*cellSize + cellSize/2;
+  const color = `var(--g${type}-1)`;
+  for(let i=0;i<6;i++){
+    const p = document.createElement("div");
+    p.className = "particle";
+    const angle = (Math.PI*2/6)*i + Math.random()*0.5;
+    const dist = cellSize*0.6 + Math.random()*cellSize*0.4;
+    p.style.setProperty("--dx", (Math.cos(angle)*dist)+"px");
+    p.style.setProperty("--dy", (Math.sin(angle)*dist)+"px");
+    p.style.left = (cx-3.5)+"px";
+    p.style.top = (cy-3.5)+"px";
+    p.style.background = color;
+    boardEl.appendChild(p);
+    p.addEventListener("animationend", ()=>p.remove(), {once:true});
+  }
+}
+
+function shakeBoard(){
+  boardFrameEl.classList.remove("shake");
+  void boardFrameEl.offsetWidth;
+  boardFrameEl.classList.add("shake");
+  setTimeout(()=>boardFrameEl.classList.remove("shake"), 350);
+}
+
+function spawnConfetti(){
+  const colors = ["#FFB259","#7FC4FF","#D6A6FF","#7FFFE8","#FF9AD1","#B8FFC0","#FFE08A"];
+  confettiLayer.innerHTML = "";
+  for(let i=0;i<28;i++){
+    const c = document.createElement("div");
+    c.className = "confetti";
+    c.style.left = (Math.random()*100)+"%";
+    c.style.background = colors[Math.floor(Math.random()*colors.length)];
+    c.style.animationDelay = (Math.random()*0.4)+"s";
+    c.style.animationDuration = (1.3+Math.random()*0.8)+"s";
+    confettiLayer.appendChild(c);
+  }
+}
+
 /* ---------- match resolution ---------- */
 async function resolveMatches(matches, colors, chain){
   if(matches.size===0) return;
@@ -520,6 +562,7 @@ async function resolveMatches(matches, colors, chain){
   score += gained;
   updateHud();
   showCombo(gained, chain, goldMult);
+  if(chain>=3 || count>=5) shakeBoard();
 
   // locked gems adjacent to a match get unlocked (but not cleared this turn)
   for(const key of matches){
@@ -560,6 +603,7 @@ async function resolveMatches(matches, colors, chain){
       }
     }else{
       if(el) el.classList.add("removing");
+      spawnParticles(r, c, cell.type);
       board[r][c] = null;
     }
   }
@@ -586,6 +630,13 @@ async function trySwap(r1,c1,r2,c2){
 
   let matches = findMatches();
   if(matches.size===0){
+    const shape1 = gemEls.get(board[r1][c1].id)?.querySelector(".gem-shape");
+    const shape2 = gemEls.get(board[r2][c2].id)?.querySelector(".gem-shape");
+    shape1?.classList.add("shake");
+    shape2?.classList.add("shake");
+    await wait(260);
+    shape1?.classList.remove("shake");
+    shape2?.classList.remove("shake");
     swapCells(r1,c1,r2,c2);
     render();
     await wait(180);
@@ -654,6 +705,7 @@ async function useHammer(r,c){
   }else{
     const el = gemEls.get(cell.id);
     if(el) el.classList.add("removing");
+    spawnParticles(r, c, cell.type);
     board[r][c] = null;
   }
   await wait(220);
@@ -944,6 +996,8 @@ function onWin(lvl){
   }else{
     nextBtn.style.display = "none";
   }
+  if(stars>=1) spawnConfetti();
+  else confettiLayer.innerHTML = "";
   showModal();
 }
 
@@ -953,6 +1007,7 @@ function onLose(){
   renderModalStars(0);
   document.getElementById("modalScore").textContent = score;
   document.getElementById("nextBtn").style.display = "none";
+  confettiLayer.innerHTML = "";
   showModal();
 }
 

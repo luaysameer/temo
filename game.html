@@ -405,6 +405,43 @@ body{
 }
 @keyframes goldShine{0%,100%{transform:scale(1) rotate(0deg);opacity:.9}50%{transform:scale(1.18) rotate(15deg);opacity:1}}
 
+.btn:active, .nav-btn:active, .booster-btn:not(:disabled):active,
+.power-btn:not(:disabled):active, .sector-tab:not(.locked):active, .shop-buy:not(:disabled):active,
+.char-select-btn:not(:disabled):active{
+  transform:scale(.93);transition:transform .08s ease;
+}
+
+.gem.selected .gem-shape{animation:selectPulse .6s ease-in-out infinite;}
+@keyframes selectPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+
+.gem-shape.shake{animation:shakeGem .3s ease;}
+@keyframes shakeGem{
+  0%,100%{transform:translateX(0) rotate(0deg)}
+  20%{transform:translateX(-6px) rotate(-8deg)}
+  40%{transform:translateX(6px) rotate(8deg)}
+  60%{transform:translateX(-4px) rotate(-5deg)}
+  80%{transform:translateX(4px) rotate(5deg)}
+}
+
+.board-frame.shake{animation:shakeBoard .35s ease;}
+@keyframes shakeBoard{
+  0%,100%{transform:translate(0,0)}
+  20%{transform:translate(-5px,3px)}
+  40%{transform:translate(5px,-3px)}
+  60%{transform:translate(-4px,2px)}
+  80%{transform:translate(4px,-2px)}
+}
+
+.particle{
+  position:absolute;border-radius:50%;pointer-events:none;z-index:6;
+  width:7px;height:7px;
+  animation:particleBurst .55s ease-out forwards;
+}
+@keyframes particleBurst{
+  0%{opacity:1;transform:translate(0,0) scale(1);}
+  100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.2);}
+}
+
 .combo-layer{position:absolute;inset:0;pointer-events:none;z-index:5;}
 .combo-pop{
   position:absolute;left:50%;top:42%;transform:translate(-50%,0);
@@ -437,6 +474,15 @@ body{
 .modal-card::before{
   content:"";position:absolute;top:-50px;left:50%;transform:translateX(-50%);width:200px;height:200px;border-radius:50%;
   background:radial-gradient(circle,rgba(243,118,35,.20) 0%,transparent 70%);pointer-events:none;
+}
+.confetti-layer{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:1;}
+.confetti{
+  position:absolute;top:-12px;width:8px;height:14px;opacity:.95;
+  animation:confettiFall 1.7s linear forwards;
+}
+@keyframes confettiFall{
+  0%{transform:translateY(0) rotate(0deg);opacity:1;}
+  100%{transform:translateY(420px) rotate(540deg);opacity:0;}
 }
 .modal-icon{font-size:52px;margin-bottom:6px;}
 .modal-title{font-family:"Orbitron",sans-serif;font-weight:900;font-size:20px;color:#fff;margin-bottom:10px;}
@@ -562,6 +608,7 @@ body{
 <!-- ===== RESULT MODAL ===== -->
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal-card">
+    <div class="confetti-layer" id="confettiLayer"></div>
     <div class="modal-icon" id="modalIcon">🏆</div>
     <div class="modal-title" id="modalTitle">Level Complete!</div>
     <div class="modal-stars" id="modalStars">★★★</div>
