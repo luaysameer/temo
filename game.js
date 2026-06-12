@@ -203,7 +203,7 @@ const confettiLayer = document.getElementById("confettiLayer");
 
 /* ---------- progress persistence ---------- */
 function loadProgress(){
-  const p = {unlocked:1, stars:{}, best:{}, character:"kaelen", maxCombo:0, boosters:{}, stardust:0};
+  const p = {unlocked:1, stars:{}, best:{}, character:"kaelen", maxCombo:0, boosters:{}, stardust:0, soundOn:true, musicOn:true};
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
     if(raw){
@@ -213,6 +213,8 @@ function loadProgress(){
       if(!p.best) p.best = {};
       if(!p.boosters) p.boosters = {};
       if(!p.stardust) p.stardust = 0;
+      if(p.soundOn===undefined) p.soundOn = true;
+      if(p.musicOn===undefined) p.musicOn = true;
     }
   }catch(e){}
   return p;
@@ -225,6 +227,103 @@ let progress = loadProgress();
 function wait(ms){ return new Promise(r=>setTimeout(r,ms)); }
 function activeChar(){ return CHARACTERS[progress.character] || CHARACTERS.kaelen; }
 function applyCharBonus(points){ return Math.round(points * (activeChar().scoreMult||1)); }
+
+/* ---------- audio engine (synthesized, no external files) ---------- */
+let audioCtx = null;
+function getAudioCtx(){
+  if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==="suspended") audioCtx.resume();
+  return audioCtx;
+}
+
+function playTone(freq, dur, type, vol, delay){
+  const ctx = getAudioCtx();
+  const t0 = ctx.currentTime + (delay||0);
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type||"sine";
+  osc.frequency.setValueAtTime(freq, t0);
+  gain.gain.setValueAtTime(vol||0.15, t0);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(t0);
+  osc.stop(t0+dur);
+}
+
+function sfx(fn){ if(progress.soundOn) fn(); }
+function sfxClick(){ sfx(()=>playTone(880,0.05,"square",0.07)); }
+function sfxSwap(){ sfx(()=>playTone(440,0.08,"triangle",0.10)); }
+function sfxInvalid(){ sfx(()=>playTone(140,0.18,"square",0.10)); }
+function sfxMatch(chain){
+  sfx(()=>{
+    const base = 520 + Math.min(chain-1,5)*70;
+    playTone(base,0.18,"sine",0.16);
+    playTone(base*1.5,0.18,"sine",0.09,0.04);
+  });
+}
+function sfxGold(){
+  sfx(()=>[0,0.06,0.12].forEach((d,i)=>playTone(700+i*180,0.16,"triangle",0.13,d)));
+}
+function sfxCombo(){
+  sfx(()=>[0,0.08,0.16,0.24].forEach((d,i)=>playTone(440+i*110,0.18,"sawtooth",0.09,d)));
+}
+function sfxWin(){
+  sfx(()=>[523,659,784,1046].forEach((f,i)=>playTone(f,0.3,"triangle",0.15,i*0.12)));
+}
+function sfxLose(){
+  sfx(()=>[392,330,262].forEach((f,i)=>playTone(f,0.35,"sawtooth",0.11,i*0.15)));
+}
+function sfxPower(){
+  sfx(()=>[660,990].forEach((f,i)=>playTone(f,0.2,"triangle",0.13,i*0.07)));
+}
+
+/* ---------- background music (looping ambient arpeggio) ---------- */
+const MUSIC_SEQ = [261.63,329.63,392.00,329.63,293.66,349.23,440.00,349.23,261.63,311.13,392.00,311.13];
+let musicTimer = null, musicStep = 0;
+function startMusic(){
+  if(!progress.musicOn || musicTimer) return;
+  getAudioCtx();
+  musicTimer = setInterval(()=>{
+    const freq = MUSIC_SEQ[musicStep % MUSIC_SEQ.length];
+    playTone(freq, 0.55, "sine", 0.04);
+    playTone(freq/2, 0.6, "triangle", 0.025);
+    musicStep++;
+  }, 550);
+}
+function stopMusic(){
+  if(musicTimer){ clearInterval(musicTimer); musicTimer = null; }
+}
+
+function updateSoundButtons(){
+  const sfxBtn = document.getElementById("sfxToggle");
+  const musicBtn = document.getElementById("musicToggle");
+  sfxBtn.textContent = progress.soundOn ? "🔊" : "🔇";
+  sfxBtn.classList.toggle("off", !progress.soundOn);
+  musicBtn.textContent = progress.musicOn ? "🎵" : "🔈";
+  musicBtn.classList.toggle("off", !progress.musicOn);
+}
+
+document.getElementById("sfxToggle").addEventListener("click", ()=>{
+  progress.soundOn = !progress.soundOn;
+  saveProgress();
+  updateSoundButtons();
+  if(progress.soundOn) sfxClick();
+});
+document.getElementById("musicToggle").addEventListener("click", ()=>{
+  progress.musicOn = !progress.musicOn;
+  saveProgress();
+  updateSoundButtons();
+  if(progress.musicOn) startMusic(); else stopMusic();
+  sfxClick();
+});
+updateSoundButtons();
+
+// browsers require a user gesture before audio can play
+document.addEventListener("pointerdown", ()=>{
+  getAudioCtx();
+  startMusic();
+}, {once:true});
 
 function updateCurrencyDisplays(){
   document.querySelectorAll(".currency-val").forEach(el=>{
@@ -563,6 +662,9 @@ async function resolveMatches(matches, colors, chain){
   updateHud();
   showCombo(gained, chain, goldMult);
   if(chain>=3 || count>=5) shakeBoard();
+  if(goldMult>1) sfxGold();
+  else if(chain>=3) sfxCombo();
+  else sfxMatch(chain);
 
   // locked gems adjacent to a match get unlocked (but not cleared this turn)
   for(const key of matches){
@@ -630,6 +732,7 @@ async function trySwap(r1,c1,r2,c2){
 
   let matches = findMatches();
   if(matches.size===0){
+    sfxInvalid();
     const shape1 = gemEls.get(board[r1][c1].id)?.querySelector(".gem-shape");
     const shape2 = gemEls.get(board[r2][c2].id)?.querySelector(".gem-shape");
     shape1?.classList.add("shake");
@@ -644,6 +747,7 @@ async function trySwap(r1,c1,r2,c2){
     return;
   }
 
+  sfxSwap();
   movesLeft--;
   updateHud();
   await resolveMatches(matches, colors, 1);
@@ -729,6 +833,7 @@ async function useHammer(r,c){
 
 async function useShuffle(){
   if(busy || powerCharges.shuffle<=0) return;
+  sfxPower();
   busy = true;
   powerCharges.shuffle--;
   updatePowerUI();
@@ -743,6 +848,7 @@ async function useShuffle(){
 
 document.getElementById("hammerBtn").addEventListener("click", ()=>{
   if(busy || powerCharges.hammer<=0) return;
+  sfxClick();
   hammerArmed = !hammerArmed;
   armedBooster = null;
   updatePowerUI();
@@ -972,6 +1078,7 @@ function checkEnd(){
 }
 
 function onWin(lvl){
+  sfxWin();
   const stars = starsFor(lvl, score);
   const prevStars = progress.stars[currentLevel] || 0;
   if(stars > prevStars) progress.stars[currentLevel] = stars;
@@ -1002,6 +1109,7 @@ function onWin(lvl){
 }
 
 function onLose(){
+  sfxLose();
   document.getElementById("modalIcon").textContent = "💥";
   document.getElementById("modalTitle").textContent = "Out of Moves";
   renderModalStars(0);
@@ -1093,7 +1201,7 @@ function buildLevelPath(sector){
   }
   container.innerHTML = html;
   container.querySelectorAll(".level-node.unlocked").forEach(btn=>{
-    btn.addEventListener("click", ()=>startLevel(parseInt(btn.dataset.level,10)));
+    btn.addEventListener("click", ()=>{ sfxClick(); startLevel(parseInt(btn.dataset.level,10)); });
   });
 }
 
@@ -1188,22 +1296,26 @@ function buildAchievements(){
 
 /* ---------- nav wiring ---------- */
 document.getElementById("backBtn").addEventListener("click", ()=>{
+  sfxClick();
   hideModal();
   buildMapView();
   showView("mapView");
   setNavActive("mapView");
 });
 document.getElementById("mapBtn").addEventListener("click", ()=>{
+  sfxClick();
   hideModal();
   buildMapView();
   showView("mapView");
   setNavActive("mapView");
 });
 document.getElementById("retryBtn").addEventListener("click", ()=>{
+  sfxClick();
   hideModal();
   startLevel(currentLevel);
 });
 document.getElementById("nextBtn").addEventListener("click", ()=>{
+  sfxClick();
   hideModal();
   if(currentLevel < LEVELS.length) startLevel(currentLevel+1);
 });
@@ -1214,6 +1326,7 @@ function setNavActive(viewId){
 
 document.querySelectorAll(".nav-btn").forEach(btn=>{
   btn.addEventListener("click", ()=>{
+    sfxClick();
     const view = btn.dataset.view;
     setNavActive(view);
     if(view==="mapView") buildMapView();
@@ -1227,6 +1340,7 @@ document.querySelectorAll(".nav-btn").forEach(btn=>{
 /* ---------- splash ---------- */
 const splashEl = document.getElementById("splash");
 document.getElementById("splashEnter").addEventListener("click", ()=>{
+  sfxClick();
   splashEl.classList.add("gone");
   setTimeout(()=>splashEl.remove(), 700);
 });
