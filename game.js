@@ -6,25 +6,25 @@ const COLS = 8, ROWS = 8;
 const STORAGE_KEY = "temoCrushProgress";
 
 const LEVELS_S1 = [
-  {target:600,   moves:25, colors:4, frozen:0},  // 1
-  {target:900,   moves:24, colors:4, frozen:0},  // 2
-  {target:1300,  moves:23, colors:4, frozen:0},  // 3
-  {target:1700,  moves:22, colors:5, frozen:0},  // 4
-  {target:2200,  moves:22, colors:5, frozen:0},  // 5
-  {target:2700,  moves:21, colors:5, frozen:0},  // 6
-  {target:3300,  moves:21, colors:5, frozen:0},  // 7
-  {target:3900,  moves:20, colors:5, frozen:0},  // 8
-  {target:4600,  moves:20, colors:5, frozen:0},  // 9
-  {target:5400,  moves:19, colors:6, frozen:0},  // 10
-  {target:6200,  moves:19, colors:6, frozen:0},  // 11
-  {target:7000,  moves:18, colors:6, frozen:0},  // 12
-  {target:7900,  moves:18, colors:6, frozen:0},  // 13
-  {target:8800,  moves:17, colors:6, frozen:0},  // 14
-  {target:9800,  moves:17, colors:6, frozen:0},  // 15
-  {target:10800, moves:16, colors:6, frozen:0},  // 16
-  {target:11900, moves:16, colors:6, frozen:0},  // 17
-  {target:13000, moves:15, colors:6, frozen:0},  // 18
-  {target:14200, moves:15, colors:6, frozen:0},  // 19
+  {target:2000,  moves:25, colors:4, frozen:0},  // 1
+  {target:2800,  moves:24, colors:4, frozen:0},  // 2
+  {target:3800,  moves:23, colors:4, frozen:0},  // 3
+  {target:4700,  moves:22, colors:5, frozen:0},  // 4
+  {target:5600,  moves:22, colors:5, frozen:0},  // 5
+  {target:6400,  moves:21, colors:5, frozen:0},  // 6
+  {target:7200,  moves:21, colors:5, frozen:0},  // 7
+  {target:7800,  moves:20, colors:5, frozen:0},  // 8
+  {target:8500,  moves:20, colors:5, frozen:0},  // 9
+  {target:9200,  moves:19, colors:6, frozen:0},  // 10
+  {target:9900,  moves:19, colors:6, frozen:0},  // 11
+  {target:10500, moves:18, colors:6, frozen:0},  // 12
+  {target:11000, moves:18, colors:6, frozen:0},  // 13
+  {target:11900, moves:17, colors:6, frozen:0},  // 14
+  {target:12700, moves:17, colors:6, frozen:0},  // 15
+  {target:13500, moves:16, colors:6, frozen:0},  // 16
+  {target:14300, moves:16, colors:6, frozen:0},  // 17
+  {target:15000, moves:15, colors:6, frozen:0},  // 18
+  {target:15600, moves:15, colors:6, frozen:0},  // 19
   {target:16000, moves:14, colors:6, frozen:0},  // 20 - sector boss
 ];
 
@@ -1157,10 +1157,47 @@ function cellFromEvent(e){
 
 boardEl.addEventListener("pointerdown", (e)=>{
   if(busy) return;
-  pointerStart = {cell: cellFromEvent(e), x: e.clientX, y: e.clientY};
+  const cell = cellFromEvent(e);
+  pointerStart = {cell, x: e.clientX, y: e.clientY, id: e.pointerId};
+  if(cell) boardEl.setPointerCapture(e.pointerId);
+});
+
+function dragShape(){
+  if(!pointerStart || !pointerStart.cell) return null;
+  const {r,c} = pointerStart.cell;
+  const cell = board[r] && board[r][c];
+  const el = cell && gemEls.get(cell.id);
+  return el ? el.querySelector(".gem-shape") : null;
+}
+
+function resetDragVisual(){
+  const shape = dragShape();
+  if(shape){ shape.style.transition = ""; shape.style.transform = ""; }
+}
+
+boardEl.addEventListener("pointermove", (e)=>{
+  if(busy || hammerArmed || armedBooster) return;
+  if(!pointerStart || !pointerStart.cell) return;
+  const shape = dragShape();
+  if(!shape) return;
+  const dx = e.clientX - pointerStart.x;
+  const dy = e.clientY - pointerStart.y;
+  const maxOffset = cellSize*0.32;
+  shape.style.transition = "none";
+  if(Math.abs(dx) > Math.abs(dy)){
+    shape.style.transform = `translate(${Math.max(-maxOffset,Math.min(maxOffset,dx))}px,0)`;
+  }else{
+    shape.style.transform = `translate(0,${Math.max(-maxOffset,Math.min(maxOffset,dy))}px)`;
+  }
+});
+
+boardEl.addEventListener("pointercancel", ()=>{
+  resetDragVisual();
+  pointerStart = null;
 });
 
 boardEl.addEventListener("pointerup", (e)=>{
+  resetDragVisual();
   if(busy || !pointerStart || !pointerStart.cell) { pointerStart=null; return; }
   const startCell = pointerStart.cell;
 
@@ -1179,7 +1216,7 @@ boardEl.addEventListener("pointerup", (e)=>{
   const dx = e.clientX - pointerStart.x;
   const dy = e.clientY - pointerStart.y;
   const absX = Math.abs(dx), absY = Math.abs(dy);
-  const threshold = 14;
+  const threshold = 10;
 
   if(Math.max(absX,absY) > threshold){
     let target;
