@@ -109,7 +109,17 @@ body{
 .planet-icon::before{
   content:"";position:absolute;width:80px;height:14px;border:2px solid rgba(168,200,240,.5);
   border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-20deg);
+  animation:ringSpin 14s linear infinite;
 }
+.planet-icon::after{
+  content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;
+  background:repeating-linear-gradient(95deg,transparent 0 10px,rgba(0,0,0,.12) 10px 14px,transparent 14px 24px,rgba(255,255,255,.10) 24px 28px);
+  background-size:200% 100%;
+  mix-blend-mode:overlay;
+  animation:planetRotate 7s linear infinite;
+}
+@keyframes ringSpin{from{transform:translate(-50%,-50%) rotate(-20deg);}to{transform:translate(-50%,-50%) rotate(340deg);}}
+@keyframes planetRotate{from{background-position:0 0;}to{background-position:200px 0;}}
 .planet-icon.planet-2{
   background:radial-gradient(circle at 32% 28%,#FFD58A,#C2247A 60%,#5A1240 100%);
   box-shadow:0 0 18px rgba(224,51,126,.6),inset -8px -8px 16px rgba(0,0,0,.35);
@@ -184,7 +194,21 @@ body{
   width:100%;display:flex;flex-direction:column;align-items:center;
   padding:10px 0 24px;position:relative;
 }
-.level-node-wrap{display:flex;flex-direction:column;align-items:center;transform:translateX(var(--off));margin:2px 0;}
+.level-node-wrap{display:flex;flex-direction:column;align-items:center;transform:translateX(var(--off));margin:2px 0;position:relative;}
+.level-node-wrap::before{
+  content:"";position:absolute;top:50%;left:50%;width:88px;height:88px;z-index:-1;
+  transform:translate(-50%,-50%) rotate(0deg);
+  clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
+  background:radial-gradient(circle,rgba(255,180,89,.55) 0%,rgba(243,118,35,.30) 55%,transparent 90%);
+  opacity:.7;animation:starSpin 16s linear infinite;pointer-events:none;
+}
+.level-node-wrap.locked::before{background:radial-gradient(circle,rgba(255,255,255,.18) 0%,rgba(255,255,255,.07) 55%,transparent 90%);opacity:.5;}
+.level-node-wrap.boss::before{
+  width:110px;height:110px;
+  background:radial-gradient(circle,rgba(255,154,209,.65) 0%,rgba(224,51,126,.40) 55%,transparent 90%);
+  animation-duration:11s;
+}
+@keyframes starSpin{from{transform:translate(-50%,-50%) rotate(0deg);}to{transform:translate(-50%,-50%) rotate(360deg);}}
 .connector{width:3px;height:26px;background:rgba(255,255,255,.08);border-radius:2px;}
 .connector.lit{background:linear-gradient(var(--o1),var(--b4));box-shadow:0 0 8px rgba(243,118,35,.5)}
 .connector.hidden{visibility:hidden;height:6px;}
@@ -308,6 +332,14 @@ body{
 }
 .moves-pill.warn{color:#FF8A80;background:rgba(255,82,82,.12);border-color:rgba(255,82,82,.35);animation:pulseWarn 1s infinite;}
 @keyframes pulseWarn{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+
+.boss-bar{
+  display:none;width:100%;justify-content:space-between;align-items:center;gap:8px;
+  background:rgba(224,51,126,.14);border:1px solid rgba(224,51,126,.4);border-radius:14px;
+  padding:9px 16px;margin-bottom:10px;font-family:"Orbitron",sans-serif;font-weight:900;font-size:13px;color:#ff9ad1;
+}
+.boss-bar.warn{color:#FF8A80;background:rgba(255,82,82,.14);border-color:rgba(255,82,82,.4);animation:pulseWarn 1s infinite;}
+.boss-bar.done .boss-objective{color:#7CFFB2;text-shadow:0 0 8px rgba(124,255,178,.7);}
 
 .score-bar{
   width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);
@@ -433,6 +465,22 @@ body{
 }
 @keyframes goldShine{0%,100%{transform:scale(1) rotate(0deg);opacity:.9}50%{transform:scale(1.18) rotate(15deg);opacity:1}}
 
+.gem.rainbow .gem-shape{
+  background:linear-gradient(135deg,#ff5e5e,#ffb347,#fff35e,#5eff8f,#5ec8ff,#b35eff,#ff5ec8,#ff5e5e);
+  background-size:300% 300%;
+  box-shadow:0 4px 8px rgba(0,0,0,.4), inset -3px -3px 7px rgba(0,0,0,.25), inset 3px 3px 7px rgba(255,255,255,.6), 0 0 16px rgba(255,255,255,.8);
+  animation:rainbowShift 1.6s linear infinite;
+}
+@keyframes rainbowShift{0%{background-position:0% 50%;}100%{background-position:300% 50%;}}
+.rainbow-overlay{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1em;
+  filter:drop-shadow(0 0 6px #fff);
+  animation:goldShine 1s ease-in-out infinite;
+  pointer-events:none;
+}
+
 .btn:active, .nav-btn:active, .booster-btn:not(:disabled):active,
 .power-btn:not(:disabled):active, .sector-tab:not(.locked):active, .shop-buy:not(:disabled):active,
 .char-select-btn:not(:disabled):active{
@@ -518,6 +566,12 @@ body{
 .modal-stars span.on{color:var(--o1);text-shadow:0 0 12px var(--o1);}
 .modal-score{font-size:14px;color:var(--b5);margin-bottom:22px;}
 .modal-score b{color:#fff;font-size:22px;font-family:"Orbitron",sans-serif;}
+.modal-bonus{
+  display:none;font-size:12px;font-weight:900;color:var(--o1);
+  background:rgba(243,118,35,.14);border:1px solid rgba(243,118,35,.35);border-radius:99px;
+  padding:8px 16px;margin:-12px 0 22px;
+}
+.modal-bonus.show{display:block;}
 .modal-buttons{display:flex;gap:10px;}
 .btn{
   flex:1;padding:14px;border:none;border-radius:14px;cursor:pointer;
@@ -668,6 +722,11 @@ body{
       <div class="moves-pill" id="movesPill">🎯 <span id="movesLeft">0</span></div>
     </div>
 
+    <div class="boss-bar" id="bossBar">
+      <div class="boss-timer">⏱ <span id="bossTime">0:00</span></div>
+      <div class="boss-objective" id="bossObjective">🌈 0/0</div>
+    </div>
+
     <div class="score-bar">
       <div class="score-text"><span>SCORE</span><b id="scoreVal">0</b></div>
       <div class="score-track">
@@ -709,6 +768,7 @@ body{
     <div class="modal-title" id="modalTitle">Level Complete!</div>
     <div class="modal-stars" id="modalStars">★★★</div>
     <div class="modal-score">SCORE<br><b id="modalScore">0</b></div>
+    <div class="modal-bonus" id="modalBonus"></div>
     <div class="modal-buttons">
       <button class="btn btn-secondary" id="retryBtn">إعادة</button>
       <button class="btn btn-primary" id="nextBtn">التالي</button>

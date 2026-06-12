@@ -140,6 +140,15 @@ const SECTORS = [
    tagline:"اصهر النجوم واجمع أعظم الكنوز في المسبك النجمي!"},
 ];
 
+// boss levels add a countdown timer plus a rainbow-gem activation objective for bonus stardust
+const BOSS_LEVELS = {
+  20:  {timeLimit:75, target:2, reward:80},
+  40:  {timeLimit:80, target:2, reward:100},
+  60:  {timeLimit:85, target:3, reward:130},
+  80:  {timeLimit:90, target:3, reward:160},
+  100: {timeLimit:95, target:4, reward:200},
+};
+
 const BOOSTERS = {
   neonwave:   {icon:"🌊", name:"Neon Wave",   nameAr:"موجة نيون",      cost:80,  desc:"يمسح صفاً كاملاً من الجواهر دفعة واحدة"},
   supergem:   {icon:"💎", name:"Super Gem",   nameAr:"الجوهرة الخارقة", cost:130, desc:"يدمر كل الجواهر من نفس نوع الجوهرة المستهدفة"},
@@ -193,6 +202,10 @@ let currentSector = 1;
 let powerCharges = {hammer:0, shuffle:0};
 let hammerArmed = false;
 let armedBooster = null;
+let bossTimer = null;
+let bossTimeLeft = 0;
+let bossObjectiveCount = 0;
+let bossRewardGiven = false;
 
 const boardEl = document.getElementById("board");
 const boardBgEl = document.getElementById("boardBg");
@@ -277,6 +290,9 @@ function sfxLose(){
 function sfxPower(){
   sfx(()=>[660,990].forEach((f,i)=>playTone(f,0.2,"triangle",0.13,i*0.07)));
 }
+function sfxRainbow(){
+  sfx(()=>[523,659,784,988,1318,1568].forEach((f,i)=>playTone(f,0.22,"sine",0.12,i*0.05)));
+}
 
 /* ---------- background music (looping ambient arpeggio) ---------- */
 const MUSIC_SEQ = [261.63,329.63,392.00,329.63,293.66,349.23,440.00,349.23,261.63,311.13,392.00,311.13];
@@ -349,7 +365,7 @@ function buildBoard(colors, frozenCount, cometCount, lockedCount, goldCount){
     board.push([]);
     for(let c=0;c<COLS;c++){
       const type = randomTypeNoMatch(r,c,colors);
-      board[r][c] = {id: nextId++, type, frozen:0, comet:false, locked:false, gold:false, spawnFrom: r-ROWS};
+      board[r][c] = {id: nextId++, type, frozen:0, comet:false, locked:false, gold:false, rainbow:false, spawnFrom: r-ROWS};
     }
   }
   let placed=0, attempts=0;
@@ -415,6 +431,42 @@ function findMatches(){
   return matched;
 }
 
+// runs of 4+ same-type matched gems spawn a rainbow gem at the run's midpoint
+function findRainbowSpawns(matches){
+  const spawns = new Set();
+  for(let r=0;r<ROWS;r++){
+    let runStart=0, runType=null, runLen=0;
+    for(let c=0;c<=COLS;c++){
+      const cell = c<COLS ? board[r][c] : null;
+      const inMatch = c<COLS && matches.has(r+","+c) && cell && !cell.locked;
+      if(inMatch && (runLen===0 || cell.type===runType)){
+        if(runLen===0) runStart=c;
+        runType = cell.type; runLen++;
+      }else{
+        if(runLen>=4) spawns.add(r+","+(runStart+Math.floor(runLen/2)));
+        runLen = inMatch?1:0;
+        runStart = c; runType = inMatch?cell.type:null;
+      }
+    }
+  }
+  for(let c=0;c<COLS;c++){
+    let runStart=0, runType=null, runLen=0;
+    for(let r=0;r<=ROWS;r++){
+      const cell = r<ROWS ? board[r][c] : null;
+      const inMatch = r<ROWS && matches.has(r+","+c) && cell && !cell.locked;
+      if(inMatch && (runLen===0 || cell.type===runType)){
+        if(runLen===0) runStart=r;
+        runType = cell.type; runLen++;
+      }else{
+        if(runLen>=4) spawns.add((runStart+Math.floor(runLen/2))+","+c);
+        runLen = inMatch?1:0;
+        runStart = r; runType = inMatch?cell.type:null;
+      }
+    }
+  }
+  return spawns;
+}
+
 function applyGravity(colors){
   for(let c=0;c<COLS;c++){
     const colGems = [];
@@ -426,7 +478,7 @@ function applyGravity(colors){
       if(idx < colGems.length){
         board[r][c] = colGems[idx];
       }else{
-        board[r][c] = {id: nextId++, type: Math.floor(Math.random()*colors), frozen:0, comet:false, locked:false, gold:false, spawnFrom: r-numNew};
+        board[r][c] = {id: nextId++, type: Math.floor(Math.random()*colors), frozen:0, comet:false, locked:false, gold:false, rainbow:false, spawnFrom: r-numNew};
       }
     }
   }
@@ -504,12 +556,14 @@ function render(){
         if(cell.comet) html += '<div class="comet-overlay">☄️</div>';
         if(cell.locked) html += '<div class="cage-overlay">🔒</div>';
         if(cell.gold) html += '<div class="gold-overlay">✨</div>';
+        if(cell.rainbow) html += '<div class="rainbow-overlay">🌈</div>';
         html += '</div>';
         el.innerHTML = html;
         if(cell.frozen>0) el.classList.add("frozen");
         if(cell.comet) el.classList.add("comet");
         if(cell.locked) el.classList.add("locked");
         if(cell.gold) el.classList.add("gold");
+        if(cell.rainbow) el.classList.add("rainbow");
         el.style.width = cellSize+"px";
         el.style.height = cellSize+"px";
         const startY = (cell.spawnFrom!==undefined ? cell.spawnFrom : r) * cellSize;
@@ -558,6 +612,49 @@ function updateHud(){
   spans[0].classList.toggle("reached", score>=lvl.target);
   spans[1].classList.toggle("reached", score>=lvl.target*1.2);
   spans[2].classList.toggle("reached", score>=lvl.target*1.5);
+}
+
+/* ---------- boss levels (timer + rainbow objective) ---------- */
+function clearBossTimer(){
+  if(bossTimer){ clearInterval(bossTimer); bossTimer = null; }
+}
+
+function updateBossUI(){
+  const boss = BOSS_LEVELS[currentLevel];
+  if(!boss) return;
+  const mins = Math.floor(Math.max(0,bossTimeLeft)/60);
+  const secs = Math.max(0,bossTimeLeft)%60;
+  document.getElementById("bossTime").textContent = `${mins}:${secs.toString().padStart(2,"0")}`;
+  document.getElementById("bossObjective").textContent = `🌈 ${Math.min(bossObjectiveCount,boss.target)}/${boss.target}`;
+  document.getElementById("bossBar").classList.toggle("warn", bossTimeLeft<=15);
+  document.getElementById("bossBar").classList.toggle("done", bossObjectiveCount>=boss.target);
+}
+
+function startBossTimer(){
+  clearBossTimer();
+  const boss = BOSS_LEVELS[currentLevel];
+  const bar = document.getElementById("bossBar");
+  if(!boss){ bar.style.display = "none"; return; }
+  bar.style.display = "flex";
+  bossTimeLeft = boss.timeLimit;
+  bossObjectiveCount = 0;
+  bossRewardGiven = false;
+  updateBossUI();
+  bossTimer = setInterval(()=>{
+    bossTimeLeft--;
+    updateBossUI();
+    if(bossTimeLeft<=0){
+      clearBossTimer();
+      if(!busy && score < target) onLose("time");
+    }
+  }, 1000);
+}
+
+function registerRainbowActivation(){
+  const boss = BOSS_LEVELS[currentLevel];
+  if(!boss) return;
+  bossObjectiveCount++;
+  updateBossUI();
 }
 
 function showCombo(points, chain, goldMult){
@@ -627,6 +724,9 @@ async function resolveMatches(matches, colors, chain){
     saveProgress();
   }
 
+  // runs of 4+ same-type gems spawn a rainbow gem instead of being cleared
+  const rainbowSpawns = findRainbowSpawns(matches);
+
   // comet gems explode in a 3x3 area when matched/cleared
   const toCheck = [...matches];
   const checked = new Set();
@@ -646,6 +746,9 @@ async function resolveMatches(matches, colors, chain){
       }
     }
   }
+
+  // keep rainbow-spawn cells out of the clear set so they survive as new rainbow gems
+  for(const key of rainbowSpawns) matches.delete(key);
 
   let goldMult = 1;
   for(const key of matches){
@@ -709,6 +812,26 @@ async function resolveMatches(matches, colors, chain){
       board[r][c] = null;
     }
   }
+
+  for(const key of rainbowSpawns){
+    const [r,c] = key.split(",").map(Number);
+    const cell = board[r] && board[r][c];
+    if(!cell || cell.rainbow) continue;
+    cell.rainbow = true;
+    const el = gemEls.get(cell.id);
+    if(el){
+      el.classList.add("rainbow");
+      const shape = el.querySelector(".gem-shape");
+      if(shape && !shape.querySelector(".rainbow-overlay")){
+        const overlay = document.createElement("div");
+        overlay.className = "rainbow-overlay";
+        overlay.textContent = "🌈";
+        shape.appendChild(overlay);
+      }
+    }
+  }
+  if(rainbowSpawns.size>0) sfxRainbow();
+
   await wait(220);
   applyGravity(colors);
   render();
@@ -731,7 +854,10 @@ async function trySwap(r1,c1,r2,c2){
   await wait(180);
 
   let matches = findMatches();
-  if(matches.size===0){
+  const cellA = board[r1][c1], cellB = board[r2][c2];
+  const rainbowSwap = cellA.rainbow || cellB.rainbow;
+
+  if(matches.size===0 && !rainbowSwap){
     sfxInvalid();
     const shape1 = gemEls.get(board[r1][c1].id)?.querySelector(".gem-shape");
     const shape2 = gemEls.get(board[r2][c2].id)?.querySelector(".gem-shape");
@@ -750,6 +876,28 @@ async function trySwap(r1,c1,r2,c2){
   sfxSwap();
   movesLeft--;
   updateHud();
+
+  if(rainbowSwap){
+    sfxRainbow();
+    registerRainbowActivation();
+    const rainbowMatches = new Set();
+    if(cellA.rainbow && cellB.rainbow){
+      // double rainbow: clear the entire board
+      for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+        if(board[r][c] && !board[r][c].locked) rainbowMatches.add(r+","+c);
+      }
+    }else{
+      const rainbowPos = cellA.rainbow ? {r:r1,c:c1} : {r:r2,c:c2};
+      const targetType = cellA.rainbow ? cellB.type : cellA.type;
+      rainbowMatches.add(rainbowPos.r+","+rainbowPos.c);
+      for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+        const cell = board[r][c];
+        if(cell && !cell.locked && cell.type===targetType) rainbowMatches.add(r+","+c);
+      }
+    }
+    for(const key of rainbowMatches) matches.add(key);
+  }
+
   await resolveMatches(matches, colors, 1);
 
   if(!hasPossibleMove()){
@@ -1078,6 +1226,7 @@ function checkEnd(){
 }
 
 function onWin(lvl){
+  clearBossTimer();
   sfxWin();
   const stars = starsFor(lvl, score);
   const prevStars = progress.stars[currentLevel] || 0;
@@ -1088,6 +1237,18 @@ function onWin(lvl){
     progress.unlocked = currentLevel+1;
   }
   progress.stardust = (progress.stardust||0) + stars*20;
+
+  const boss = BOSS_LEVELS[currentLevel];
+  const bonusEl = document.getElementById("modalBonus");
+  if(boss && bossObjectiveCount>=boss.target && !bossRewardGiven){
+    bossRewardGiven = true;
+    progress.stardust += boss.reward;
+    bonusEl.textContent = `🎁 مكافأة الزعيم: +${boss.reward} نجم بارود`;
+    bonusEl.classList.add("show");
+  }else{
+    bonusEl.classList.remove("show");
+  }
+
   saveProgress();
   updateCurrencyDisplays();
 
@@ -1108,13 +1269,15 @@ function onWin(lvl){
   showModal();
 }
 
-function onLose(){
+function onLose(reason){
+  clearBossTimer();
   sfxLose();
-  document.getElementById("modalIcon").textContent = "💥";
-  document.getElementById("modalTitle").textContent = "Out of Moves";
+  document.getElementById("modalIcon").textContent = reason==="time" ? "⏰" : "💥";
+  document.getElementById("modalTitle").textContent = reason==="time" ? "Time's Up!" : "Out of Moves";
   renderModalStars(0);
   document.getElementById("modalScore").textContent = score;
   document.getElementById("nextBtn").style.display = "none";
+  document.getElementById("modalBonus").classList.remove("show");
   confettiLayer.innerHTML = "";
   showModal();
 }
@@ -1158,6 +1321,7 @@ function startLevel(n){
   updateHud();
   updatePowerUI();
   buildBoosterRow();
+  startBossTimer();
 }
 
 /* ---------- map / navigation ---------- */
@@ -1191,7 +1355,7 @@ function buildLevelPath(sector){
     const isBoss = i===sector.end;
     const unlocked = i <= progress.unlocked;
     const stars = progress.stars[i] || 0;
-    html += `<div class="level-node-wrap" style="--off:${offset}px">`;
+    html += `<div class="level-node-wrap ${unlocked?'':'locked'} ${isBoss?'boss':''}" style="--off:${offset}px">`;
     html += `<div class="connector ${local===1?'hidden':''} ${unlocked?'lit':''}"></div>`;
     html += `<button class="level-node ${unlocked?'unlocked':'locked'} ${isBoss?'boss':''}" data-level="${i}" ${unlocked?'':'disabled'}>`;
     html += unlocked ? (isBoss?"☄️":local) : "🔒";
@@ -1297,6 +1461,7 @@ function buildAchievements(){
 /* ---------- nav wiring ---------- */
 document.getElementById("backBtn").addEventListener("click", ()=>{
   sfxClick();
+  clearBossTimer();
   hideModal();
   buildMapView();
   showView("mapView");
@@ -1304,6 +1469,7 @@ document.getElementById("backBtn").addEventListener("click", ()=>{
 });
 document.getElementById("mapBtn").addEventListener("click", ()=>{
   sfxClick();
+  clearBossTimer();
   hideModal();
   buildMapView();
   showView("mapView");
