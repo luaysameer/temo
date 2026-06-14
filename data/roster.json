@@ -1,0 +1,379 @@
+[
+  {
+    "id": "CHAR_001",
+    "name": "Toshihiko Tanaka",
+    "team": "Kakegawa High",
+    "position": "CF / Attacking MF",
+    "archetype": "Hero Striker",
+    "base_stats": {
+      "DRIBBLE": 72,
+      "SHOOT": 85,
+      "PASS": 60,
+      "TACKLE": 40,
+      "SPEED": 78,
+      "GUTS_MAX": 180,
+      "BLOCK": 25
+    },
+    "growth_modifiers": {
+      "per_stage_SHOOT": 3,
+      "per_stage_GUTS_MAX": 5,
+      "unlock_condition": "Stage progression unlocks Phantom Left tiers"
+    },
+    "special_moves": [
+      {
+        "move_id": "SM_001",
+        "name": "Phantom Left",
+        "tier": 1,
+        "unlock_stage": 1,
+        "type": "SHOOT",
+        "guts_cost": 35,
+        "base_shoot_bonus": 30,
+        "effect": "Curve shot. Opponent GK BLOCK -15. Ball trajectory changes after release (RNG dodge chance 20%).",
+        "animation_id": "ANIM_PHANTOM_LEFT_T1"
+      },
+      {
+        "move_id": "SM_002",
+        "name": "Phantom Left — Tier 2",
+        "tier": 2,
+        "unlock_stage": 4,
+        "type": "SHOOT",
+        "guts_cost": 50,
+        "base_shoot_bonus": 55,
+        "effect": "Enhanced curve. GK BLOCK -25. RNG dodge chance 35%. Can be chained from Miracle Combo (Pass source must be Kubo or Hiramatsu).",
+        "animation_id": "ANIM_PHANTOM_LEFT_T2"
+      },
+      {
+        "move_id": "SM_003",
+        "name": "Phantom Left — Limit Break",
+        "tier": 3,
+        "unlock_stage": 6,
+        "type": "SHOOT",
+        "guts_cost": "ALL_REMAINING (min 1)",
+        "base_shoot_bonus": 999,
+        "effective_shoot_stat": 255,
+        "effect": "One use per match. SHOOT becomes 255. GK BLOCK -40. Triggers mandatory cinematic. Cannot be countered except by GK with BLOCK ≥ 240.",
+        "uses_per_match": 1,
+        "animation_id": "ANIM_PHANTOM_LEFT_LIMITBREAK"
+      },
+      {
+        "move_id": "SM_004",
+        "name": "Gotoh Memorial Drive",
+        "tier": 1,
+        "unlock_stage": 3,
+        "type": "PASS",
+        "guts_cost": 20,
+        "base_pass_bonus": 25,
+        "effect": "Precision through-ball. Target ally gets +20 SHOOT on their next action this turn. Inspired by Coach Gotoh's tactical teachings.",
+        "animation_id": "ANIM_GOTOH_DRIVE"
+      }
+    ]
+  },
+  {
+    "id": "CHAR_002",
+    "name": "Yoshiharu Kubo",
+    "team": "Kakegawa High",
+    "position": "LW / AM",
+    "archetype": "Speed Dribbler",
+    "base_stats": {
+      "DRIBBLE": 88,
+      "SHOOT": 62,
+      "PASS": 70,
+      "TACKLE": 35,
+      "SPEED": 92,
+      "GUTS_MAX": 155,
+      "BLOCK": 20
+    },
+    "growth_modifiers": {
+      "per_stage_DRIBBLE": 2,
+      "per_stage_SPEED": 2
+    },
+    "special_moves": [
+      {
+        "move_id": "SM_010",
+        "name": "Kubo's Dash",
+        "type": "DRIBBLE",
+        "guts_cost": 25,
+        "base_dribble_bonus": 35,
+        "effect": "Solo sprint. Bypasses first TACKLE encounter automatically (treated as win). Second TACKLE encounter in same chain is resolved normally. SPEED stat added to DRIBBLE check.",
+        "animation_id": "ANIM_KUBO_DASH"
+      },
+      {
+        "move_id": "SM_011",
+        "name": "Kubo Solo Run — Chain",
+        "type": "DRIBBLE_CHAIN",
+        "guts_cost": 15,
+        "per_dribble_cost": 15,
+        "max_chain": 4,
+        "base_dribble_bonus": 20,
+        "effect": "Each successful dribble in chain refills 10 GUTS to all allies. Chain breaks on first loss. Each consecutive success adds +5 cumulative DRIBBLE bonus.",
+        "animation_id": "ANIM_KUBO_CHAINRUN"
+      },
+      {
+        "move_id": "SM_012",
+        "name": "Miracle Combo — Initiate",
+        "type": "PASS",
+        "guts_cost": 20,
+        "base_pass_bonus": 20,
+        "effect": "Initiates Miracle Combo chain. If Toshihiko or Hiramatsu receives, next SHOOT gets +25 bonus and -10 GK BLOCK penalty. Consumed on receipt.",
+        "animation_id": "ANIM_MIRACLE_COMBO_PASS"
+      }
+    ]
+  },
+  {
+    "id": "CHAR_003",
+    "name": "Kenji Hiramatsu",
+    "team": "Kakegawa High",
+    "position": "CM / Captain",
+    "archetype": "Leader / Playmaker",
+    "base_stats": {
+      "DRIBBLE": 65,
+      "SHOOT": 58,
+      "PASS": 85,
+      "TACKLE": 72,
+      "SPEED": 65,
+      "GUTS_MAX": 190,
+      "BLOCK": 38
+    },
+    "passive_abilities": [
+      {
+        "name": "Captain's Aura",
+        "effect": "All Kakegawa players within 'zone' (passing range) get +5 to all stats passively while Hiramatsu is on field and GUTS > 30."
+      },
+      {
+        "name": "Tactical Read",
+        "effect": "Once per match, after an opponent TACKLE encounter win, Hiramatsu can force a re-roll (one use)."
+      }
+    ],
+    "special_moves": [
+      {
+        "move_id": "SM_020",
+        "name": "Precision Cross",
+        "type": "PASS",
+        "guts_cost": 22,
+        "base_pass_bonus": 40,
+        "effect": "Aerial cross to striker. If recipient is Toshihiko, SHOOT +30 on header attempt. Bypasses PASS-CUT encounter (no interception chance on this move).",
+        "animation_id": "ANIM_PRECISION_CROSS"
+      },
+      {
+        "move_id": "SM_021",
+        "name": "Slide Tackle — Captain",
+        "type": "TACKLE",
+        "guts_cost": 18,
+        "base_tackle_bonus": 30,
+        "effect": "Hard slide. On win: ball recovered + opponent enters 1-turn fumble state (cannot pass or shoot). On lose: Hiramatsu 'minor injury' — SPEED -10 for 2 turns.",
+        "animation_id": "ANIM_CAPTAIN_SLIDE"
+      },
+      {
+        "move_id": "SM_022",
+        "name": "Halftime Rally",
+        "type": "PASSIVE_EVENT",
+        "trigger": "Halftime if trailing or 0-0",
+        "guts_cost": 0,
+        "effect": "Cutscene triggers. All ally GUTS restored to 60% max. All ally base stats +10 for second half. One-time per match.",
+        "animation_id": "ANIM_HALFTIME_RALLY"
+      }
+    ]
+  },
+  {
+    "id": "CHAR_004",
+    "name": "Kazuhiko Sawada",
+    "team": "Kakegawa High",
+    "position": "GK",
+    "archetype": "Developing Goalkeeper",
+    "base_stats": {
+      "DRIBBLE": 20,
+      "SHOOT": 15,
+      "PASS": 30,
+      "TACKLE": 45,
+      "SPEED": 55,
+      "GUTS_MAX": 160,
+      "BLOCK": 68
+    },
+    "growth_modifiers": {
+      "per_stage_BLOCK": 4,
+      "unlock_condition": "Saves unlock anti-shot passives"
+    },
+    "special_moves": [
+      {
+        "move_id": "SM_030",
+        "name": "Punch Clear",
+        "type": "BLOCK",
+        "guts_cost": 15,
+        "base_block_bonus": 20,
+        "effect": "Aerial clearance. Used in aerial/corner encounters. Clears ball to midfield — triggers Kakegawa possession (skips opponent turn).",
+        "animation_id": "ANIM_PUNCH_CLEAR"
+      },
+      {
+        "move_id": "SM_031",
+        "name": "Dive Save",
+        "type": "BLOCK",
+        "guts_cost": 20,
+        "base_block_bonus": 35,
+        "effect": "Full-extension dive. +35 BLOCK. On success: gains 'Read' passive for that shot type for remainder of match (-15 penalty on same move removed).",
+        "animation_id": "ANIM_DIVE_SAVE"
+      },
+      {
+        "move_id": "SM_032",
+        "name": "Quick Distribute",
+        "type": "PASS",
+        "guts_cost": 8,
+        "base_pass_bonus": 15,
+        "effect": "Fast throw to flanks after save. Initiates fast-break — next Kakegawa action this turn costs -5 GUTS.",
+        "animation_id": "ANIM_QUICK_DISTRIBUTE"
+      }
+    ]
+  },
+  {
+    "id": "CHAR_005",
+    "name": "Shingo Aoi",
+    "team": "Kakegawa High",
+    "position": "RW / Support FW",
+    "archetype": "Support Winger",
+    "base_stats": {
+      "DRIBBLE": 70,
+      "SHOOT": 55,
+      "PASS": 75,
+      "TACKLE": 40,
+      "SPEED": 80,
+      "GUTS_MAX": 140,
+      "BLOCK": 22
+    },
+    "special_moves": [
+      {
+        "move_id": "SM_040",
+        "name": "Overlap Run",
+        "type": "DRIBBLE",
+        "guts_cost": 18,
+        "base_dribble_bonus": 22,
+        "effect": "Wide overlap. If successful, creates 2v1 — next pass cannot be intercepted (PASS-CUT auto-fail for opponent).",
+        "animation_id": "ANIM_OVERLAP_RUN"
+      },
+      {
+        "move_id": "SM_041",
+        "name": "Cutback Cross",
+        "type": "PASS",
+        "guts_cost": 15,
+        "base_pass_bonus": 30,
+        "effect": "Low cutback from byline. Receiver (Toshihiko preferred) gets +20 SHOOT and shot auto-targets near post (GK positioning penalty -10).",
+        "animation_id": "ANIM_CUTBACK_CROSS"
+      }
+    ]
+  },
+  {
+    "id": "CHAR_006",
+    "name": "Ryuji Kakegawa (Team Sub — Defensive CM)",
+    "team": "Kakegawa High",
+    "position": "CDM",
+    "archetype": "Anchor / Destroyer",
+    "base_stats": {
+      "DRIBBLE": 45,
+      "SHOOT": 35,
+      "PASS": 55,
+      "TACKLE": 82,
+      "SPEED": 58,
+      "GUTS_MAX": 175,
+      "BLOCK": 50
+    },
+    "special_moves": [
+      {
+        "move_id": "SM_050",
+        "name": "Crunching Tackle",
+        "type": "TACKLE",
+        "guts_cost": 20,
+        "base_tackle_bonus": 40,
+        "effect": "High-risk tackle. On win: ball stolen + opponent player -20 SPEED for 3 turns. On lose: foul called (opponent free kick, player suspended 1 turn).",
+        "animation_id": "ANIM_CRUNCHING_TACKLE"
+      }
+    ]
+  },
+  {
+    "id": "RIVAL_001",
+    "name": "Kazuhiro Okita",
+    "team": "Tokyo Musashi High",
+    "position": "CF",
+    "archetype": "Toshihiko's Rival — Elite Striker",
+    "base_stats": {
+      "DRIBBLE": 80,
+      "SHOOT": 90,
+      "PASS": 65,
+      "TACKLE": 50,
+      "SPEED": 82,
+      "GUTS_MAX": 170,
+      "BLOCK": 28
+    },
+    "special_moves": [
+      {
+        "move_id": "SM_R001",
+        "name": "Spiral Drive",
+        "type": "SHOOT",
+        "guts_cost": 40,
+        "base_shoot_bonus": 45,
+        "effect": "Spinning low shot. GK BLOCK -25. Triggers separate 'spin' RNG: 30% chance ball deflects off post into net even on a 'failed' GK save roll.",
+        "animation_id": "ANIM_SPIRAL_DRIVE"
+      },
+      {
+        "move_id": "SM_R002",
+        "name": "Counter Press",
+        "type": "TACKLE",
+        "guts_cost": 15,
+        "base_tackle_bonus": 35,
+        "effect": "Immediate press after losing ball. Forces another TACKLE encounter before opponent can pass. One use per possession loss.",
+        "animation_id": "ANIM_COUNTER_PRESS"
+      }
+    ]
+  },
+  {
+    "id": "RIVAL_002",
+    "name": "Ryuji Mizoguchi",
+    "team": "Yokohama Sogo",
+    "position": "CF / SS",
+    "archetype": "Physical Powerhouse",
+    "base_stats": {
+      "DRIBBLE": 75,
+      "SHOOT": 88,
+      "PASS": 50,
+      "TACKLE": 60,
+      "SPEED": 70,
+      "GUTS_MAX": 200,
+      "BLOCK": 35
+    },
+    "special_moves": [
+      {
+        "move_id": "SM_R010",
+        "name": "Power Blast",
+        "type": "SHOOT",
+        "guts_cost": 45,
+        "base_shoot_bonus": 50,
+        "effect": "Straight power shot. No curve. GK must survive BLOCK check or animation shows GK knocked backwards (fail animation triggers automatic goal). Highest raw SHOOT damage in Stages 1-6.",
+        "animation_id": "ANIM_POWER_BLAST"
+      }
+    ]
+  },
+  {
+    "id": "RIVAL_003",
+    "name": "Daisuke Arakawa",
+    "team": "Kakegawa Regulars (Stage 1 Antagonist)",
+    "position": "CM",
+    "archetype": "Skeptic / Antagonist",
+    "base_stats": {
+      "DRIBBLE": 55,
+      "SHOOT": 50,
+      "PASS": 60,
+      "TACKLE": 65,
+      "SPEED": 58,
+      "GUTS_MAX": 130,
+      "BLOCK": 30
+    },
+    "special_moves": [
+      {
+        "move_id": "SM_R020",
+        "name": "Pressure Mark",
+        "type": "TACKLE",
+        "guts_cost": 12,
+        "base_tackle_bonus": 20,
+        "effect": "Tight man-mark. Target player loses -15 DRIBBLE for 2 turns if tackle wins. Represents Arakawa's controlling, suppressive style.",
+        "animation_id": "ANIM_PRESSURE_MARK"
+      }
+    ]
+  }
+]

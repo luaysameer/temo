@@ -1,0 +1,199 @@
+[
+  {
+    "stage_number": 1,
+    "opponent_team": "Kakegawa High — Intra-School Trial Match (Arakawa XI)",
+    "narrative_context": "Toshihiko Tanaka and the surviving members of the Inspired team (Hiramatsu, Kubo, Sawada) attempt to honor their late coach Gotoh by forming a real team at Kakegawa High. Their first challenge is an internal scrimmage against the school's skeptical regular club members led by Arakawa.",
+    "scripted_events": [
+      {
+        "trigger": "TURN_5_OR_FIRST_SHOT_ATTEMPT",
+        "event_id": "EVT_S1_KUBO_SOLO_RUN",
+        "description": "Yoshiharu Kubo activates his signature solo dribble sequence. Forces a DRIBBLE vs TACKLE encounter against Arakawa's fullback. Win condition unlocks 'Kubo's Dash' passive for the stage.",
+        "outcome_win": "Kubo reaches penalty area; grants +10 SHOOT stat bonus to next shooter this stage.",
+        "outcome_lose": "Ball lost; Arakawa counter-attack triggers."
+      },
+      {
+        "trigger": "SCORE_DIFFERENTIAL_0_0_AFTER_TURN_10",
+        "event_id": "EVT_S1_TOSHIHIKO_AWAKENING",
+        "description": "Cutscene: Toshihiko recalls Coach Gotoh's words. Triggers a locked SHOOT encounter; player must initiate 'Phantom Left' for the first time (tutorial prompt). Move is partially formed — damage is halved this stage.",
+        "outcome_win": "Goal scored; Phantom Left officially registered in character movelist.",
+        "outcome_lose": "Shot blocked; Phantom Left still registered but stage ends in 0-0 draw (still progression)."
+      }
+    ]
+  },
+  {
+    "stage_number": 2,
+    "opponent_team": "Shizuoka Higashi High (Preliminary Round)",
+    "narrative_context": "Kakegawa's first official regional match. The team is untested and has no reputation. Shizuoka Higashi fields a technically superior side relying on structured combination play.",
+    "scripted_events": [
+      {
+        "trigger": "OPPONENT_FIRST_SHOT_ATTEMPT",
+        "event_id": "EVT_S2_SAWADA_SAVE",
+        "description": "Goalkeeper Sawada faces a powerful shot. Forced BLOCK encounter with a -15 BLOCK penalty (reflecting his rawness). Cutscene plays regardless of outcome — emphasizes the team's vulnerability.",
+        "outcome_win": "Save triggers teammate morale boost: +5 GUTS to all Kakegawa players for 3 turns.",
+        "outcome_lose": "Opponent goes 1-0 up; triggers Hiramatsu's rally speech (passive +8 DRIBBLE to Toshihiko)."
+      },
+      {
+        "trigger": "KAKEGAWA_REACHES_PENALTY_AREA_FIRST_TIME",
+        "event_id": "EVT_S2_KUBO_ONE_TWO",
+        "description": "Scripted ONE-TWO pass between Kubo and Toshihiko. Unlocks the 'Miracle Combo' mechanic — a chained Pass→Shoot sequence that costs 20 GUTS from each participant but adds a +25 SHOOT bonus to the finishing shot.",
+        "outcome_win": "Goal + Miracle Combo mechanic permanently enabled.",
+        "outcome_lose": "Pass-Cut by defender; Miracle Combo still unlocked but no goal."
+      }
+    ]
+  },
+  {
+    "stage_number": 3,
+    "opponent_team": "Shizuoka Nishi High (Regional Qualifier)",
+    "narrative_context": "A dirty, physical side. The match tests Kakegawa's resilience as their opponents foul aggressively. Hiramatsu's leadership as field captain becomes critical.",
+    "scripted_events": [
+      {
+        "trigger": "TURN_3",
+        "event_id": "EVT_S3_HIRAMATSU_INJURED",
+        "description": "A scripted hard foul forces a TACKLE encounter on Hiramatsu. If Hiramatsu loses, he enters 'Injured' state: all stats -20%, GUTS drain doubles. Reflects the anime's physical punishment arc.",
+        "outcome_win": "Hiramatsu uninjured; standard play continues.",
+        "outcome_lose": "Injured state active. Cutscene: Toshihiko vows to carry the team."
+      },
+      {
+        "trigger": "KAKEGAWA_TRAILING_BY_1_ANY_TURN",
+        "event_id": "EVT_S3_KUBO_LONG_RUN",
+        "description": "Kubo's legendary solo run from his own half. Triggers a chain of 4 consecutive DRIBBLE encounters with escalating defender stats. Each successful dribble refills 10 GUTS for all allies.",
+        "outcome_win_all_4": "Kubo shoots; grants +30 SHOOT. Cinematic cutscene plays.",
+        "outcome_lose_any": "Ball lost at the point of failure; chain resets."
+      }
+    ]
+  },
+  {
+    "stage_number": 4,
+    "opponent_team": "Numazu FC (Mid-Prefectural Round)",
+    "narrative_context": "A semi-professional style club team backed by resources. Features their ace striker with a powerful header game, directly challenging Sawada's goalkeeping ceiling.",
+    "scripted_events": [
+      {
+        "trigger": "OPPONENT_CORNER_KICK_EVENT",
+        "event_id": "EVT_S4_SAWADA_PUNCH_CLEAR",
+        "description": "Forced aerial duel. Sawada must use 'Punch Clear' (costs 15 GUTS). BLOCK vs SHOOT stat check. Highlights his growth arc.",
+        "outcome_win": "Ball cleared; Kakegawa counter.",
+        "outcome_lose": "Header goal; triggers Toshihiko anger state (+15 SHOOT for 2 turns, -10 PASS)."
+      },
+      {
+        "trigger": "SCORE_TIED_FINAL_5_TURNS",
+        "event_id": "EVT_S4_PHANTOM_LEFT_FULL",
+        "description": "Toshihiko's Phantom Left fully manifests for the first time. Cutscene: ball curves impossibly. SHOOT encounter uses Phantom Left's full stats (no longer halved). Goalkeeper BLOCK check at -20 penalty.",
+        "outcome_win": "Winning goal; Phantom Left upgraded to Tier 2 in character stats.",
+        "outcome_lose": "Saved; match goes to overtime (bonus stage, turns +5)."
+      }
+    ]
+  },
+  {
+    "stage_number": 5,
+    "opponent_team": "Yokohama Sogo (Prefectural Semifinal)",
+    "narrative_context": "A nationally ranked school with individual superstars. This is Kakegawa's true coming-out match. The gap in raw talent is visible — only teamwork bridges it.",
+    "scripted_events": [
+      {
+        "trigger": "TURN_1",
+        "event_id": "EVT_S5_RIVAL_STAR_INTRO",
+        "description": "Yokohama's ace (Mizoguchi Ryuji analogue) scores within the first 2 turns via a scripted event player cannot prevent. Forces Kakegawa into deficit immediately.",
+        "outcome": "Kakegawa 0-1. Morale system activates: all stats -5% until Kakegawa equalizes."
+      },
+      {
+        "trigger": "KAKEGAWA_EQUALIZES",
+        "event_id": "EVT_S5_MIRACLE_TEAM_SYNERGY",
+        "description": "All three core players (Toshihiko, Kubo, Hiramatsu) are on field simultaneously after equalization. 'Miracle Team' synergy activates: any Miracle Combo costs -5 GUTS (stacks with existing discount).",
+        "outcome_win_match": "Advance to final. Extended cutscene: Coach Gotoh's memory.",
+        "outcome_lose_match": "Story branch: loss is canonical to certain anime arcs — game continues to Stage 6 via 'defeat route'."
+      }
+    ]
+  },
+  {
+    "stage_number": 6,
+    "opponent_team": "Shizuoka Prefectural Select XI (Prefectural Final / Kanto Qualifier)",
+    "narrative_context": "The cumulative showdown. The Select team is assembled from the best players Kakegawa has already defeated, coached by someone who has studied all of Kakegawa's patterns.",
+    "scripted_events": [
+      {
+        "trigger": "HALFTIME_0_0_OR_TRAILING",
+        "event_id": "EVT_S6_HIRAMATSU_SPEECH",
+        "description": "Halftime cutscene: Hiramatsu's locker-room speech. All Kakegawa GUTS bars reset to 60% of max (not full, reflecting exhaustion). Stat bonuses: +10 to all base stats for second half only.",
+        "outcome": "Permanent for second half of this stage."
+      },
+      {
+        "trigger": "TOSHIHIKO_GUTS_BELOW_20",
+        "event_id": "EVT_S6_FINAL_PHANTOM_LEFT",
+        "description": "Even at near-zero GUTS, Toshihiko can activate 'Phantom Left — Limit Break': costs ALL remaining GUTS (minimum 1). SHOOT stat temporarily becomes 255 (max). One-time use. Cutscene mandatory.",
+        "outcome_win": "Goal. Match win if score equalized or ahead.",
+        "outcome_lose": "Saved only if opponent GK has BLOCK ≥ 240 (only final boss GK qualifies)."
+      },
+      {
+        "trigger": "STAGE_WIN",
+        "event_id": "EVT_S6_KANTO_QUALIFICATION",
+        "description": "Extended ending cutscene: the team qualifies for the Kanto tournament. Coach Gotoh's photo shown. Credits sequence for Chapter 1 arc. New game chapter unlocked.",
+        "outcome": "Unlocks Stage 7 through Stage 12 (Kanto Arc)."
+      }
+    ]
+  },
+  {
+    "stage_number": 7,
+    "opponent_team": "Ibaraki Higashi (Kanto Round 1)",
+    "narrative_context": "First exposure to Kanto-level talent. Physically bigger players with advanced combination play. Kakegawa's technical skill must compensate for the size disadvantage.",
+    "scripted_events": [
+      {
+        "trigger": "FIRST_TACKLE_ENCOUNTER_LOST",
+        "event_id": "EVT_S7_PHYSICAL_SHOCK",
+        "description": "Cutscene showing Kubo knocked down hard. His SPEED drops by 15 for 2 turns. Signals to player that brute-force dribbling must yield to pass-based play.",
+        "outcome": "Kubo stat debuff applied; resolves after 2 turns naturally."
+      }
+    ]
+  },
+  {
+    "stage_number": 8,
+    "opponent_team": "Chiba Sogo (Kanto Quarterfinal)",
+    "narrative_context": "A counter-attacking side that sits deep and strikes fast. Their ace forward has a Submarine Shot variant that reduces GK BLOCK by 30 on execution.",
+    "scripted_events": [
+      {
+        "trigger": "OPPONENT_ACE_FIRST_SHOT",
+        "event_id": "EVT_S8_SUBMARINE_COUNTER",
+        "description": "Scripted Submarine Shot from opponent's ace. BLOCK check at -30 for Sawada. Even if saved, cutscene acknowledges the danger.",
+        "outcome_win": "Save. Sawada gains 'Read Submarine' passive: -15 penalty removed for rest of match.",
+        "outcome_lose": "Goal conceded. Match difficulty increases (opponent AI gets +10 to all TACKLE checks)."
+      }
+    ]
+  },
+  {
+    "stage_number": 9,
+    "opponent_team": "Tokyo Musashi (Kanto Semifinal — Rival School Arc)",
+    "narrative_context": "Musashi's ace, Kazuhiro Okita, is Toshihiko's personal rival from middle school. The match carries enormous emotional weight and unlocks deeper Phantom Left variants.",
+    "scripted_events": [
+      {
+        "trigger": "OKITA_AND_TOSHIHIKO_DIRECT_ENCOUNTER_FIRST_TIME",
+        "event_id": "EVT_S9_RIVAL_CLASH",
+        "description": "Mandatory one-on-one DRIBBLE vs TACKLE encounter between Toshihiko and Okita. Cutscene regardless of outcome. If Toshihiko wins: gains 'Rivalry Boost' (+20 SHOOT, +10 DRIBBLE) for 5 turns.",
+        "outcome_lose": "Toshihiko falls behind; Okita taunts. Triggers 'Desperation Mode' — Phantom Left cost reduced by 10 GUTS for rest of match."
+      },
+      {
+        "trigger": "SCORE_TIED_TURN_15_OR_LATER",
+        "event_id": "EVT_S9_OKITA_SPECIAL_SHOT",
+        "description": "Okita activates his signature 'Spiral Drive' shot. Sawada BLOCK check at -25. Cutscene mandatory.",
+        "outcome_win": "Saved. Sawada permanently unlocks 'Anti-Spiral' passive (+15 BLOCK vs spin shots).",
+        "outcome_lose": "Concede. Toshihiko must score twice in remaining turns."
+      }
+    ]
+  },
+  {
+    "stage_number": 10,
+    "opponent_team": "Kanagawa Tokai (Kanto Final)",
+    "narrative_context": "The definitive Kanto power: a balanced, deep squad with no obvious weakness. Every player is elite. The match requires the full tactical depth of everything learned.",
+    "scripted_events": [
+      {
+        "trigger": "TURN_1",
+        "event_id": "EVT_S10_FULL_ROSTER_REQUIRED",
+        "description": "Game checks if all 11 Kakegawa players have been used at least once across Stages 7-9. If yes: 'Full Miracle Team' passive active — Miracle Combo chain can extend to 3 players (Pass→Pass→Shoot) at 15 GUTS cost each.",
+        "outcome_condition_not_met": "Standard 2-player Miracle Combo only."
+      },
+      {
+        "trigger": "FINAL_TURN_SCORE_TIED",
+        "event_id": "EVT_S10_LAST_SECOND_GOAL",
+        "description": "If score is tied at the last turn, a forced Toshihiko SHOOT encounter triggers. Phantom Left — Limit Break is available even if GUTS > 20 (exception rule for finale). Extended cinematic regardless of outcome.",
+        "outcome_win": "Kanto Champions. Full ending cutscene. Credits roll for Chapter 2.",
+        "outcome_lose": "Overtime: 3 additional turns, then Penalty Shootout mini-game."
+      }
+    ]
+  }
+]
