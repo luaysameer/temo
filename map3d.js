@@ -1,5 +1,7 @@
 /* TEMO CRUSH 3D - World Map (NSMB Wii-style walkable level select) */
 import * as THREE from "three";
+import { FBXLoader } from "./vendor/loaders/FBXLoader.js";
+import { clone as cloneSkinned } from "./vendor/utils/SkeletonUtils.js";
 
 const STORAGE_KEY = "temoCrushProgress";
 const SECTOR_LEVELS = 20;
@@ -7,9 +9,11 @@ const NODE_SPACING = 3.2;
 const X_AMP = 2.1;
 
 const CHAR_THEMES = {
-  kaelen: {suit:0xF37623, visor:0x4A90D9, avatar:"👨‍🚀"},
-  elara:  {suit:0x4A90D9, visor:0xFF9AD1, avatar:"👩‍🚀"},
+  kaelen: {suit:0xF37623, visor:0x4A90D9, avatar:"👨‍🚀", skin:"./assets/player/skin-kaelen.png"},
+  elara:  {suit:0x4A90D9, visor:0xFF9AD1, avatar:"👩‍🚀", skin:"./assets/player/skin-elara.png"},
 };
+const PLAYER_HEIGHT = 1.3; // target world height of the player model
+const PLAYER_MODEL_YAW = 0; // corrective yaw so the model's front matches rotation.y=facing
 
 /* ---------- progress (shared with game.js / game3d.js) ---------- */
 function loadProgress(){
@@ -234,52 +238,86 @@ for(let i=0;i<SECTOR_LEVELS;i++){
   scene.add(gate);
 }
 
-/* ---------- player avatar ---------- */
-function createPlayerMesh(themeKey){
-  const theme = CHAR_THEMES[themeKey] || CHAR_THEMES.kaelen;
-  const group = new THREE.Group();
+/* ---------- player avatar (Kenney FBX character + idle animation) ---------- */
+const fbxLoader = new FBXLoader();
+const playerTexLoader = new THREE.TextureLoader();
+let playerTemplate = null; // {model, idleClip}
+let playerTemplateLoading = null;
 
-  const body = new THREE.Mesh(
+function loadPlayerTemplate(){
+  if(playerTemplateLoading) return playerTemplateLoading;
+  playerTemplateLoading = new Promise((resolve)=>{
+    fbxLoader.load("./assets/player/model.fbx", (model)=>{
+      fbxLoader.load("./assets/player/idle.fbx", (anim)=>{
+        playerTemplate = {model, idleClip: anim.animations[0]};
+        resolve(playerTemplate);
+      });
+    });
+  });
+  return playerTemplateLoading;
+}
+
+function buildPlaceholder(themeKey){
+  const theme = CHAR_THEMES[themeKey] || CHAR_THEMES.kaelen;
+  const placeholder = new THREE.Mesh(
     new THREE.CapsuleGeometry(0.26, 0.42, 4, 12),
     new THREE.MeshPhysicalMaterial({color:theme.suit, metalness:0.3, roughness:0.35, clearcoat:0.4})
   );
-  body.position.y = 0.42;
-  body.castShadow = true;
-  group.add(body);
+  placeholder.position.y = 0.42;
+  placeholder.castShadow = true;
+  return placeholder;
+}
 
-  const helmet = new THREE.Mesh(
-    new THREE.SphereGeometry(0.26, 20, 20),
-    new THREE.MeshPhysicalMaterial({color:0xe8f0ff, metalness:0.1, roughness:0.1, transparent:true, opacity:0.85, clearcoat:1})
-  );
-  helmet.position.y = 0.92;
-  helmet.castShadow = true;
-  group.add(helmet);
+/* populate a player rig with the loaded Kenney character model, scaled/oriented
+   so its feet sit at the rig's local origin, with the idle animation playing */
+function populatePlayerModel(rig, themeKey){
+  const theme = CHAR_THEMES[themeKey] || CHAR_THEMES.kaelen;
+  const model = cloneSkinned(playerTemplate.model);
 
-  const visor = new THREE.Mesh(
-    new THREE.SphereGeometry(0.17, 16, 16, 0, Math.PI*2, 0, Math.PI/1.6),
-    new THREE.MeshStandardMaterial({color:theme.visor, emissive:theme.visor, emissiveIntensity:0.6})
-  );
-  visor.position.set(0, 0.95, 0.16);
-  visor.rotation.x = -0.3;
-  group.add(visor);
+  const box = new THREE.Box3().setFromObject(model);
+  const size = box.getSize(new THREE.Vector3());
+  const scale = PLAYER_HEIGHT / size.y;
+  model.scale.setScalar(scale);
+  model.position.y = -box.min.y * scale;
+  model.rotation.y = PLAYER_MODEL_YAW;
 
-  const thrusterGeo = new THREE.ConeGeometry(0.12, 0.3, 8);
-  const thrusterMat = new THREE.MeshBasicMaterial({color:0xffb259, transparent:true, opacity:0.7});
-  const thrusterL = new THREE.Mesh(thrusterGeo, thrusterMat);
-  thrusterL.rotation.x = Math.PI;
-  thrusterL.position.set(-0.18, 0.04, 0.04);
-  const thrusterR = thrusterL.clone();
-  thrusterR.position.x = 0.18;
-  group.add(thrusterL, thrusterR);
-  group.userData.thrusters = [thrusterL, thrusterR];
+  const tex = playerTexLoader.load(theme.skin);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  model.traverse(o=>{
+    if(o.isMesh){
+      o.material = new THREE.MeshStandardMaterial({map:tex, roughness:0.7, metalness:0.05});
+      o.castShadow = true;
+    }
+  });
 
-  return group;
+  const mixer = new THREE.AnimationMixer(model);
+  mixer.clipAction(playerTemplate.idleClip).play();
+  rig.userData.mixer = mixer;
+
+  rig.add(model);
+  rig.userData.model = model;
+}
+
+function createPlayerMesh(themeKey){
+  const rig = new THREE.Group();
+  const placeholder = buildPlaceholder(themeKey);
+  rig.add(placeholder);
+  rig.userData.placeholder = placeholder;
+
+  loadPlayerTemplate().then(()=>{
+    rig.remove(placeholder);
+    disposeGroup(placeholder);
+    rig.userData.placeholder = null;
+    populatePlayerModel(rig, themeKey);
+  });
+
+  return rig;
 }
 
 let currentIndex = Math.max(0, Math.min(progress.unlocked-1, SECTOR_LEVELS-1));
 function playerStandPos(i){
   const p = nodePos(i).clone();
-  p.y += 0.62;
+  p.y += 0.86;
   return p;
 }
 let player = createPlayerMesh(progress.character);
@@ -401,9 +439,12 @@ window.addEventListener("resize", onResize);
 onResize();
 
 /* ---------- main loop ---------- */
+let lastFrameTime = performance.now();
 function frame(){
   requestAnimationFrame(frame);
   const now = performance.now();
+  const dt = (now-lastFrameTime)/1000;
+  lastFrameTime = now;
 
   for(const n of nodeGroups){
     n.marker.rotation.y += 0.012;
@@ -413,6 +454,7 @@ function frame(){
     const flick = 0.55 + Math.sin(now*0.02)*0.2 + Math.random()*0.1;
     for(const th of player.userData.thrusters) th.scale.set(1, flick, 1);
   }
+  if(player.userData.mixer) player.userData.mixer.update(dt);
 
   updateCamera(false);
   renderer.render(scene, camera);
