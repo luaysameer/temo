@@ -1,6 +1,7 @@
 /* TEMO CRUSH 3D - World Map (NSMB Wii-style walkable level select) */
 import * as THREE from "three";
 import { FBXLoader } from "./vendor/loaders/FBXLoader.js";
+import { GLTFLoader } from "./vendor/loaders/GLTFLoader.js";
 import { clone as cloneSkinned } from "./vendor/utils/SkeletonUtils.js";
 
 const STORAGE_KEY = "temoCrushProgress";
@@ -58,20 +59,21 @@ function nodePos(i){
   return new THREE.Vector3(Math.sin(i*0.85)*X_AMP, Math.cos(i*0.6)*0.35, -i*NODE_SPACING);
 }
 function makeLabelSprite(text, opts={}){
-  const size = 128;
+  const h = 128;
+  const w = opts.wide ? 384 : 128;
   const c = document.createElement("canvas");
-  c.width = c.height = size;
+  c.width = w; c.height = h;
   const ctx = c.getContext("2d");
   ctx.fillStyle = opts.color || "#ffffff";
   ctx.font = `900 ${opts.fontSize||72}px sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(text, size/2, size/2+6);
+  ctx.fillText(text, w/2, h/2+6);
   const tex = new THREE.CanvasTexture(c);
   const mat = new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:true});
   const sprite = new THREE.Sprite(mat);
   const s = opts.scale||0.8;
-  sprite.scale.set(s, s, 1);
+  sprite.scale.set(s*(w/h), s, 1);
   return sprite;
 }
 function makeLockSprite(){
@@ -220,22 +222,51 @@ for(let i=0;i<SECTOR_LEVELS;i++){
 }
 
 /* sector 2 gate (decorative) */
+const gltfLoader = new GLTFLoader();
+const spinningPlanets = [];
+
 {
   const gate = new THREE.Group();
   const gp = nodePos(SECTOR_LEVELS-1).clone();
   gp.z -= NODE_SPACING*1.5;
   gate.position.copy(gp);
-  const planet = new THREE.Mesh(
-    new THREE.SphereGeometry(1.1, 28, 28),
-    new THREE.MeshStandardMaterial({color:0xC2247A, emissive:0x5A1240, emissiveIntensity:0.6, roughness:0.5})
-  );
-  planet.position.y = 1.7;
-  planet.castShadow = true;
-  gate.add(planet);
-  const gateLabel = makeLabelSprite("SECTOR 2", {scale:1.1, color:"#FF9AD1", fontSize:48});
-  gateLabel.position.y = 3.1;
+
+  gltfLoader.load("./assets/planets/saturn.glb", (gltf)=>{
+    const saturn = gltf.scene;
+    const box = new THREE.Box3().setFromObject(saturn);
+    const size = box.getSize(new THREE.Vector3());
+    const scale = 2.6 / size.x; // ~2.6 units wide including rings
+    saturn.scale.setScalar(scale);
+    saturn.position.y = 2.0;
+    saturn.traverse(o=>{ if(o.isMesh){ o.castShadow = true; o.receiveShadow = true; } });
+    gate.add(saturn);
+    spinningPlanets.push({obj:saturn, speed:0.18});
+  });
+
+  const gateLabel = makeLabelSprite("SECTOR 2", {scale:1.1, color:"#FF9AD1", fontSize:48, wide:true});
+  gateLabel.position.y = 3.6;
   gate.add(gateLabel);
   scene.add(gate);
+}
+
+/* distant gas-giant backdrop, looming beyond the sector gate */
+{
+  gltfLoader.load("./assets/planets/jupiter.glb", (gltf)=>{
+    const jupiter = gltf.scene;
+    const box = new THREE.Box3().setFromObject(jupiter);
+    const size = box.getSize(new THREE.Vector3());
+    const scale = 10 / size.x; // huge, distant
+    jupiter.scale.setScalar(scale);
+    const gp = nodePos(SECTOR_LEVELS-1).clone();
+    jupiter.position.set(gp.x+4, 6, gp.z - NODE_SPACING*4);
+    scene.add(jupiter);
+
+    if(gltf.animations && gltf.animations.length){
+      const mixer = new THREE.AnimationMixer(jupiter);
+      mixer.clipAction(gltf.animations[0]).play();
+      spinningPlanets.push({mixer});
+    }
+  });
 }
 
 /* ---------- player avatar (Kenney FBX character + idle animation) ---------- */
@@ -455,6 +486,10 @@ function frame(){
     for(const th of player.userData.thrusters) th.scale.set(1, flick, 1);
   }
   if(player.userData.mixer) player.userData.mixer.update(dt);
+  for(const p of spinningPlanets){
+    if(p.obj) p.obj.rotation.y += p.speed*dt;
+    if(p.mixer) p.mixer.update(dt);
+  }
 
   updateCamera(false);
   renderer.render(scene, camera);
