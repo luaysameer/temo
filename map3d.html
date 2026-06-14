@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TEMO CRUSH 3D - World Map</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+:root{
+  --o1:#F37623;--o2:#FF9A45;
+  --b1:#0F2548;--b3:#2563B0;--b4:#4A90D9;--b5:#A8C8F0;
+}
+html,body{height:100%}
+body{
+  font-family:"Tajawal",sans-serif;background:#070f24;color:#fff;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  overflow:hidden;
+}
+.app{width:100%;max-width:460px;display:flex;flex-direction:column;height:100vh;padding:14px;gap:10px;}
+
+.hud-row{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.level-pill{
+  font-family:"Orbitron",sans-serif;font-weight:900;font-size:13px;letter-spacing:2px;color:#fff;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);border-radius:99px;
+  padding:8px 16px;display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;
+}
+.level-pill .sector{font-size:9px;color:var(--b5);letter-spacing:3px;opacity:.8;}
+.stars-row{display:flex;gap:2px;font-size:12px;color:rgba(255,255,255,.2);margin-top:2px;}
+.stars-row span.on{color:var(--o2);text-shadow:0 0 4px var(--o1);}
+.currency-pill{
+  font-weight:900;font-size:13px;color:var(--o2);
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+  border-radius:99px;padding:8px 14px;display:flex;align-items:center;gap:6px;
+  font-family:"Orbitron",sans-serif;white-space:nowrap;
+}
+.char-btn{
+  width:42px;height:42px;border-radius:50%;font-size:20px;cursor:pointer;flex:none;
+  border:2px solid var(--o1);background:radial-gradient(circle at 40% 35%,var(--b3),var(--b1));
+  box-shadow:0 0 14px rgba(243,118,35,.45);display:flex;align-items:center;justify-content:center;
+}
+
+#canvasWrap{
+  flex:1;min-height:0;border-radius:22px;overflow:hidden;position:relative;
+  background:radial-gradient(ellipse at 50% 30%,#16284d 0%,#070f24 70%);
+  border:1px solid rgba(255,255,255,.10);
+  box-shadow:0 0 0 1px rgba(74,144,217,.15),0 18px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.08);
+}
+#gameCanvas{display:block;width:100%;height:100%;touch-action:none;}
+
+.hint{
+  position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  font-size:11px;color:var(--b5);background:rgba(10,20,40,.55);
+  border:1px solid rgba(255,255,255,.12);border-radius:99px;padding:6px 14px;
+  pointer-events:none;backdrop-filter:blur(6px);white-space:nowrap;
+}
+
+.controls-row{display:flex;align-items:center;gap:10px;}
+.step-btn{
+  width:56px;height:56px;border-radius:16px;border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.05);color:#fff;font-size:22px;cursor:pointer;flex:none;
+  display:flex;align-items:center;justify-content:center;
+}
+.step-btn:disabled{opacity:.25;cursor:not-allowed;}
+.play-btn{
+  flex:1;padding:16px;border:none;border-radius:16px;cursor:pointer;
+  font-family:"Orbitron",sans-serif;font-weight:900;font-size:16px;letter-spacing:2px;color:#fff;
+  background:linear-gradient(135deg,var(--o1) 0%,var(--o2) 50%,var(--b4) 100%);
+  box-shadow:0 4px 18px rgba(243,118,35,.4),inset 0 1px 0 rgba(255,255,255,.2);
+}
+.play-btn:disabled{opacity:.3;cursor:not-allowed;background:rgba(255,255,255,.08);box-shadow:none;}
+
+.char-modal{
+  position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;
+  background:rgba(5,12,28,.78);backdrop-filter:blur(6px);padding:20px;
+}
+.char-modal.show{display:flex;}
+.char-modal-card{
+  width:100%;max-width:320px;border-radius:24px;padding:24px;text-align:center;
+  background:rgba(20,40,75,.92);border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 24px 60px rgba(0,0,0,.6);
+}
+.char-modal-title{font-family:"Orbitron",sans-serif;font-weight:900;font-size:16px;margin-bottom:16px;letter-spacing:2px;}
+.char-options{display:flex;gap:12px;}
+.char-option{
+  flex:1;border-radius:16px;padding:16px 10px;cursor:pointer;
+  background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.12);
+}
+.char-option.selected{border-color:var(--o1);box-shadow:0 0 18px rgba(243,118,35,.35);}
+.char-option .avatar{font-size:40px;margin-bottom:8px;}
+.char-option .name{font-weight:900;font-size:12px;}
+.char-option .role{font-size:10px;color:var(--b5);margin-top:2px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="hud-row">
+    <div class="level-pill">
+      <span class="sector" id="sectorLabel">SECTOR 1 · ASTEROID BELT</span>
+      <span id="levelLabel">LEVEL 1</span>
+      <div class="stars-row" id="starsRow"></div>
+    </div>
+    <button class="char-btn" id="charBtn">👨‍🚀</button>
+    <div class="currency-pill">⭐ <span id="stardustVal">0</span></div>
+  </div>
+
+  <div id="canvasWrap">
+    <canvas id="gameCanvas"></canvas>
+    <div class="hint">Walk to a node, then PLAY</div>
+  </div>
+
+  <div class="controls-row">
+    <button class="step-btn" id="backStep">◀</button>
+    <button class="play-btn" id="playBtn" disabled>▶ PLAY</button>
+    <button class="step-btn" id="fwdStep">▶</button>
+  </div>
+</div>
+
+<div class="char-modal" id="charModal">
+  <div class="char-modal-card">
+    <div class="char-modal-title">CHOOSE YOUR PILOT</div>
+    <div class="char-options">
+      <div class="char-option" data-char="kaelen">
+        <div class="avatar">👨‍🚀</div>
+        <div class="name">Capt. Kaelen</div>
+        <div class="role">+10% score</div>
+      </div>
+      <div class="char-option" data-char="elara">
+        <div class="avatar">👩‍🚀</div>
+        <div class="name">Maj. Elara</div>
+        <div class="role">+1 move</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js" } }
+</script>
+<script type="module" src="map3d.js"></script>
+</body>
+</html>

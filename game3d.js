@@ -1,6 +1,32 @@
 /* TEMO CRUSH 3D - Three.js match-3 prototype */
 import * as THREE from "three";
 
+/* ---------- shared progress (synced with map3d / game.js) ---------- */
+const STORAGE_KEY = "temoCrushProgress";
+const CHARACTERS = {
+  kaelen: {scoreMult:1.10, extraMoves:0},
+  elara:  {scoreMult:1.0,  extraMoves:1},
+};
+function loadProgress(){
+  const p = {unlocked:1, stars:{}, best:{}, character:"kaelen", maxCombo:0, boosters:{}, stardust:0};
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) Object.assign(p, JSON.parse(raw));
+  }catch(e){}
+  return p;
+}
+function saveProgress(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); }catch(e){} }
+const progress = loadProgress();
+function activeChar(){ return CHARACTERS[progress.character] || CHARACTERS.kaelen; }
+function starsFor(tgt, sc){
+  if(sc >= tgt*1.5) return 3;
+  if(sc >= tgt*1.2) return 2;
+  if(sc >= tgt) return 1;
+  return 0;
+}
+const urlLevel = parseInt(new URLSearchParams(location.search).get("level"), 10);
+const startLevelNum = (Number.isFinite(urlLevel) && urlLevel>=1) ? urlLevel : 1;
+
 const COLS = 8, ROWS = 8, COLORS = 6;
 const SPACING = 1.05;
 const GEM_Y = 0.42;
@@ -192,7 +218,7 @@ function disposeGroup(group){
 /* ---------- board state & match-3 logic ---------- */
 let board = [];
 let busy = false;
-let level = 1, score = 0, moves = 25, target = 2000;
+let level = startLevelNum, score = 0, moves = 25, target = 2000;
 
 function randomTypeNoMatch(r,c){
   let t;
@@ -379,6 +405,7 @@ async function animateGravity(){
 
 /* ---------- HUD ---------- */
 function updateHud(){
+  document.getElementById("levelBadge").textContent = level;
   document.getElementById("scoreVal").textContent = score;
   document.getElementById("movesLeft").textContent = moves;
   document.getElementById("targetVal").textContent = target;
@@ -402,7 +429,7 @@ async function resolveMatches(matches, chain){
   const count = matches.size;
   const base = count*60 + Math.max(0,count-3)*30;
   const mult = 1 + (chain-1)*0.5;
-  const gained = Math.round(base*mult);
+  const gained = Math.round(base*mult*(activeChar().scoreMult||1));
   score += gained;
   updateHud();
   showScorePop(gained, chain);
@@ -468,18 +495,30 @@ function showModal(icon, title, isWin){
   document.getElementById("modalIcon").textContent = icon;
   document.getElementById("modalTitle").textContent = title;
   document.getElementById("modalScore").textContent = score;
-  document.getElementById("continueBtn").textContent = isWin ? "Next Level ▶" : "Retry";
+  document.getElementById("continueBtn").textContent = isWin ? "Back to Map" : "Retry";
   document.getElementById("continueBtn").dataset.win = isWin ? "1" : "0";
   document.getElementById("modalOverlay").classList.add("show");
 }
 function hideModal(){ document.getElementById("modalOverlay").classList.remove("show"); }
 
-function onWin(){ showModal("🏆","Level Complete!", true); }
+function onWin(){
+  const stars = starsFor(target, score);
+  const prevStars = progress.stars[level] || 0;
+  if(stars > prevStars) progress.stars[level] = stars;
+  const prevBest = progress.best[level] || 0;
+  if(score > prevBest) progress.best[level] = score;
+  if(level === progress.unlocked && level < 20){
+    progress.unlocked = level+1;
+  }
+  progress.stardust = (progress.stardust||0) + stars*20;
+  saveProgress();
+  showModal("🏆","Level Complete!", true);
+}
 function onLose(){ showModal("💥","Out of Moves", false); }
 
 async function startLevel(){
   score = 0;
-  moves = 25;
+  moves = 25 + (activeChar().extraMoves||0);
   target = 2000 + (level-1)*900;
   clearBoard();
   buildBoard();
@@ -490,8 +529,11 @@ async function startLevel(){
 document.getElementById("continueBtn").addEventListener("click", ()=>{
   const win = document.getElementById("continueBtn").dataset.win==="1";
   hideModal();
-  if(win) level++;
-  startLevel();
+  if(win){
+    window.location.href = "map3d.html";
+  }else{
+    startLevel();
+  }
 });
 
 /* ---------- input: raycasting ---------- */
