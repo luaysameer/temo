@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TEMO CRUSH 3D</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+:root{
+  --o1:#F37623;--o2:#FF9A45;
+  --b1:#0F2548;--b3:#2563B0;--b4:#4A90D9;--b5:#A8C8F0;
+}
+html,body{height:100%}
+body{
+  font-family:"Tajawal",sans-serif;background:var(--b1);color:#fff;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  overflow:hidden;
+}
+.app{width:100%;max-width:460px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px;height:100vh;}
+
+.hud{width:100%;}
+.hud-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;}
+.icon-btn{
+  width:40px;height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.05);color:#fff;font-size:18px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;text-decoration:none;
+}
+.level-pill{
+  font-family:"Orbitron",sans-serif;font-weight:900;font-size:13px;letter-spacing:2px;color:#fff;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);border-radius:99px;
+  padding:8px 16px;display:flex;align-items:center;gap:8px;
+}
+.level-pill .badge{
+  background:linear-gradient(135deg,var(--o1),var(--b4));color:#fff;border-radius:6px;
+  padding:2px 6px;font-size:10px;
+}
+.moves-pill{
+  font-weight:900;font-size:15px;color:var(--o1);
+  background:rgba(243,118,35,.12);border:1px solid rgba(243,118,35,.3);border-radius:99px;
+  padding:8px 16px;display:flex;align-items:center;gap:6px;min-width:64px;justify-content:center;
+}
+.moves-pill.warn{color:#FF8A80;background:rgba(255,82,82,.12);border-color:rgba(255,82,82,.35);}
+
+.score-bar{
+  width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);
+  border-radius:14px;padding:10px 14px;margin-bottom:10px;
+}
+.score-text{display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--b5);}
+.score-text b{color:#fff;font-size:15px;}
+.score-track{height:10px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:6px;}
+.score-fill{
+  height:100%;width:0%;border-radius:99px;
+  background:linear-gradient(90deg,var(--o1),var(--o2) 50%,var(--b4));
+  box-shadow:0 0 10px rgba(243,118,35,.6);transition:width .35s ease;
+}
+
+#canvasWrap{
+  width:100%;aspect-ratio:1/1;max-height:100%;border-radius:22px;overflow:hidden;position:relative;
+  background:radial-gradient(ellipse at 50% 30%,#16284d 0%,#0a1530 70%);
+  border:1px solid rgba(255,255,255,.10);
+  box-shadow:0 0 0 1px rgba(74,144,217,.15),0 18px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.08);
+}
+#gameCanvas{display:block;width:100%;height:100%;touch-action:none;}
+
+.hint{
+  position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
+  font-size:11px;color:var(--b5);background:rgba(10,20,40,.55);
+  border:1px solid rgba(255,255,255,.12);border-radius:99px;padding:6px 14px;
+  pointer-events:none;backdrop-filter:blur(6px);white-space:nowrap;
+}
+
+.score-pop{
+  position:absolute;left:50%;top:42%;transform:translate(-50%,0);
+  font-family:"Orbitron",sans-serif;font-weight:900;font-size:20px;color:#fff;
+  text-shadow:0 0 10px var(--o1),0 0 22px var(--o2);
+  animation:comboUp .8s ease-out forwards;white-space:nowrap;pointer-events:none;
+}
+@keyframes comboUp{0%{opacity:0;transform:translate(-50%,10px) scale(.7)}20%{opacity:1;transform:translate(-50%,-10px) scale(1.1)}100%{opacity:0;transform:translate(-50%,-50px) scale(1)}}
+
+.modal-overlay{
+  position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;
+  background:rgba(5,12,28,.72);backdrop-filter:blur(6px);padding:20px;
+}
+.modal-overlay.show{display:flex;}
+.modal-card{
+  width:100%;max-width:320px;border-radius:24px;padding:30px 24px;text-align:center;
+  background:rgba(20,40,75,.92);border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 0 0 1px rgba(243,118,35,.15),0 24px 60px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.08);
+}
+.modal-icon{font-size:48px;margin-bottom:6px;}
+.modal-title{font-family:"Orbitron",sans-serif;font-weight:900;font-size:18px;color:#fff;margin-bottom:10px;}
+.modal-score{font-size:13px;color:var(--b5);margin-bottom:20px;}
+.modal-score b{color:#fff;font-size:22px;font-family:"Orbitron",sans-serif;display:block;margin-top:4px;}
+.btn{
+  width:100%;padding:14px;border:none;border-radius:14px;cursor:pointer;
+  font-family:"Tajawal",sans-serif;font-weight:900;font-size:15px;color:#fff;
+}
+.btn-primary{
+  background:linear-gradient(135deg,var(--o1) 0%,var(--o2) 50%,var(--b4) 100%);
+  box-shadow:0 4px 18px rgba(243,118,35,.4),inset 0 1px 0 rgba(255,255,255,.2);
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="hud">
+    <div class="hud-row">
+      <a class="icon-btn" href="game.html" title="Back to 2D">‹</a>
+      <div class="level-pill">TEMO CRUSH <span class="badge">3D</span></div>
+      <div class="moves-pill" id="movesPill">🎯 <span id="movesLeft">25</span></div>
+    </div>
+    <div class="score-bar">
+      <div class="score-text"><span>SCORE <b id="scoreVal">0</b></span><span>TARGET <b id="targetVal">2000</b></span></div>
+      <div class="score-track"><div class="score-fill" id="scoreFill"></div></div>
+    </div>
+  </div>
+  <div id="canvasWrap">
+    <canvas id="gameCanvas"></canvas>
+    <div class="hint">Drag a gem to swap with a neighbor</div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-card">
+    <div class="modal-icon" id="modalIcon">🏆</div>
+    <div class="modal-title" id="modalTitle">Level Complete!</div>
+    <div class="modal-score">SCORE<b id="modalScore">0</b></div>
+    <button class="btn btn-primary" id="continueBtn">Continue</button>
+  </div>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js" } }
+</script>
+<script type="module" src="game3d.js"></script>
+</body>
+</html>
