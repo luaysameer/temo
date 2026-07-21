@@ -1,0 +1,30 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "temo-plugins",
+  "description": "Claude Code plugins vendored for use on this project",
+  "owner": {
+    "name": "luaysameer"
+  },
+  "plugins": [
+    {
+      "name": "code-review",
+      "description": "Automated code review for pull requests using multiple specialized agents with confidence-based scoring to filter false positives",
+      "author": {
+        "name": "Boris Cherny",
+        "email": "boris@anthropic.com"
+      },
+      "source": "./plugins/code-review",
+      "category": "productivity"
+    },
+    {
+      "name": "ponytail",
+      "description": "Lazy senior dev mode. Forces the simplest, shortest solution that actually works: YAGNI, stdlib first, no unrequested abstractions.",
+      "author": {
+        "name": "Dietrich Gebert",
+        "url": "https://github.com/DietrichGebert"
+      },
+      "source": "./plugins/ponytail",
+      "category": "productivity"
+    }
+  ]
+}
