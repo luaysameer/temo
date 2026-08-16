@@ -34,21 +34,27 @@ jobs:
           ffmpeg -hide_banner -loglevel error -y -i /tmp/temo/logo.webp -vf 'scale=192:192' public/assets/icon-192.png
           ffmpeg -hide_banner -loglevel error -y -i /tmp/temo/logo.webp -vf 'scale=512:512' public/assets/icon-512.png
 
-      - name: Create silent animated MP4 splash
+      - name: Create compact silent animated MP4 splash
         run: |
           ffmpeg -hide_banner -loglevel error -y -loop 1 -i public/assets/temo-superqi-logo.png \
-            -vf "scale=500:500,pad=540:960:(ow-iw)/2:(oh-ih)/2:color=0x050913,fade=t=in:st=0:d=0.7,fade=t=out:st=9.3:d=0.7,format=yuv420p" \
-            -t 10 -r 24 -an -c:v libx264 -preset medium -crf 28 -movflags +faststart \
+            -vf "scale=540:540,zoompan=z='1.02+0.018*sin(2*PI*on/192)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=540x540:fps=24,fade=t=in:st=0:d=0.45,fade=t=out:st=7.55:d=0.45,format=yuv420p" \
+            -t 8 -an -c:v libx264 -preset medium -crf 27 -movflags +faststart \
             public/assets/temo-splash.mp4
 
-      - name: Refresh asset URLs
+      - name: Refresh V6.2 mobile assets and cache keys
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
           p = Path('public/index.html')
           s = p.read_text(encoding='utf-8')
-          s = re.sub(r'(\./assets/(?:favicon\.png|temo-superqi-logo\.png|temo-splash\.mp4))(?:\?v=[^"\']+)?', r'\1?v=6.1', s)
+          s = re.sub(r'(\./assets/(?:favicon\.png|temo-superqi-logo\.png|temo-splash\.mp4))(?:\?v=[^"\']+)?', r'\1?v=6.2', s)
+          s = re.sub(r'(\./css/app\.css)(?:\?v=[^"\']+)?', r'\1?v=6.2', s)
+          s = re.sub(r'(\./js/app\.js)(?:\?v=[^"\']+)?', r'\1?v=6.2', s)
+          marker = 'data-critical-v62'
+          if marker not in s:
+              critical = '''  <style data-critical-v62>html,body{margin:0;min-height:100%;background:#02050b}.splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:14px;background:#02050b}.splash.hide{opacity:0;visibility:hidden;pointer-events:none}.splash-inner{width:min(86vw,350px);text-align:center}.splash video{display:block;width:100%;height:auto;aspect-ratio:1/1;object-fit:cover;border-radius:26px}.splash-text{color:#fff;margin:10px 0}.splash button{padding:10px 22px;border-radius:12px}</style>\n'''
+              s = s.replace('</head>', critical + '</head>')
           p.write_text(s, encoding='utf-8')
           PY
 
@@ -81,16 +87,16 @@ jobs:
             echo 'Unexpected audio track in splash MP4'
             exit 1
           fi
-          printf 'V6.1 FINAL - correct logo + silent MP4 splash + APK + cache refresh\n%s\n' "$(date -u +%FT%TZ)" > public/version.txt
+          printf 'V6.2 MOBILE FIX - square animated splash + cache-busted CSS/JS + APK\n%s\n' "$(date -u +%FT%TZ)" > public/version.txt
 
       - name: Commit generated production files
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add public/index.html public/assets/temo-superqi-logo.png public/assets/favicon.png public/assets/icon-192.png public/assets/icon-512.png public/assets/temo-splash.mp4 public/downloads/TEMO-SuperQi.apk public/version.txt
+          git add public/index.html public/css/app.css public/assets/temo-superqi-logo.png public/assets/favicon.png public/assets/icon-192.png public/assets/icon-512.png public/assets/temo-splash.mp4 public/downloads/TEMO-SuperQi.apk public/version.txt
           if git diff --cached --quiet; then
             echo 'Nothing changed'
             exit 0
           fi
-          git commit -m 'Publish SuperQi V6.1 final assets'
+          git commit -m 'Publish SuperQi V6.2 mobile layout fix'
           git push origin HEAD:superqi-production
