@@ -41,6 +41,17 @@ jobs:
             -t 10 -r 24 -an -c:v libx264 -preset medium -crf 28 -movflags +faststart \
             public/assets/temo-splash.mp4
 
+      - name: Refresh asset URLs
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p = Path('public/index.html')
+          s = p.read_text(encoding='utf-8')
+          s = re.sub(r'(\./assets/(?:favicon\.png|temo-superqi-logo\.png|temo-splash\.mp4))(?:\?v=[^"\']+)?', r'\1?v=6.1', s)
+          p.write_text(s, encoding='utf-8')
+          PY
+
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
@@ -59,6 +70,7 @@ jobs:
           gradle -p superqi-apk assembleDebug
           cp superqi-apk/app/build/outputs/apk/debug/app-debug.apk public/downloads/TEMO-SuperQi.apk
           rm -rf superqi-apk
+          git add -A superqi-apk || true
 
       - name: Verify production package
         run: |
@@ -69,16 +81,16 @@ jobs:
             echo 'Unexpected audio track in splash MP4'
             exit 1
           fi
-          printf 'V6 FINAL - correct logo + silent MP4 splash + APK\n%s\n' "$(date -u +%FT%TZ)" > public/version.txt
+          printf 'V6.1 FINAL - correct logo + silent MP4 splash + APK + cache refresh\n%s\n' "$(date -u +%FT%TZ)" > public/version.txt
 
       - name: Commit generated production files
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add public/assets/temo-superqi-logo.png public/assets/favicon.png public/assets/icon-192.png public/assets/icon-512.png public/assets/temo-splash.mp4 public/downloads/TEMO-SuperQi.apk public/version.txt
+          git add public/index.html public/assets/temo-superqi-logo.png public/assets/favicon.png public/assets/icon-192.png public/assets/icon-512.png public/assets/temo-splash.mp4 public/downloads/TEMO-SuperQi.apk public/version.txt
           if git diff --cached --quiet; then
             echo 'Nothing changed'
             exit 0
           fi
-          git commit -m 'Publish SuperQi V6 final assets'
+          git commit -m 'Publish SuperQi V6.1 final assets'
           git push origin HEAD:superqi-production
