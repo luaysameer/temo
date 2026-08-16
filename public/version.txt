@@ -1,2 +1,2 @@
-V5 PREMIUM - Git -> Cloudflare auto deploy
-2026-08-16
+V6 FINAL - correct logo + silent MP4 splash + APK
+2026-08-16T09:38:16Z
