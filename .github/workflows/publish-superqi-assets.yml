@@ -6,6 +6,7 @@ on:
       - superqi-production
     paths:
       - '.build-assets/logo/**'
+      - '.build-assets/video-v63b/**'
       - '.github/workflows/publish-superqi-assets.yml'
 
 permissions:
@@ -27,34 +28,85 @@ jobs:
 
       - name: Restore correct TEMO SuperQi logo
         run: |
-          mkdir -p /tmp/temo public/assets public/downloads
+          mkdir -p /tmp/temo public/assets public/downloads public/css
           cat .build-assets/logo/part*.txt | base64 -d > /tmp/temo/logo.webp
           ffmpeg -hide_banner -loglevel error -y -i /tmp/temo/logo.webp public/assets/temo-superqi-logo.png
           ffmpeg -hide_banner -loglevel error -y -i /tmp/temo/logo.webp -vf 'scale=128:128' public/assets/favicon.png
           ffmpeg -hide_banner -loglevel error -y -i /tmp/temo/logo.webp -vf 'scale=192:192' public/assets/icon-192.png
           ffmpeg -hide_banner -loglevel error -y -i /tmp/temo/logo.webp -vf 'scale=512:512' public/assets/icon-512.png
 
-      - name: Create compact silent animated MP4 splash
+      - name: Restore user uploaded MP4 exactly as visual source
         run: |
-          ffmpeg -hide_banner -loglevel error -y -loop 1 -i public/assets/temo-superqi-logo.png \
-            -vf "scale=540:540,zoompan=z='1.02+0.018*sin(2*PI*on/192)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=540x540:fps=24,fade=t=in:st=0:d=0.45,fade=t=out:st=7.55:d=0.45,format=yuv420p" \
-            -t 8 -an -c:v libx264 -preset medium -crf 27 -movflags +faststart \
-            public/assets/temo-splash.mp4
+          if [ -f .build-assets/video-v63b/video.b64 ]; then
+            base64 -d .build-assets/video-v63b/video.b64 > /tmp/temo/user-upload.mp4
+          elif ls .build-assets/video-v63b/part*.txt >/dev/null 2>&1; then
+            cat .build-assets/video-v63b/part*.txt | base64 -d > /tmp/temo/user-upload.mp4
+          else
+            echo 'User uploaded MP4 source is missing'
+            exit 1
+          fi
+          ffprobe -v error /tmp/temo/user-upload.mp4
+          ffmpeg -hide_banner -loglevel error -y -i /tmp/temo/user-upload.mp4 -map 0:v:0 -c:v copy -an -movflags +faststart public/assets/temo-splash.mp4
 
-      - name: Refresh V6.2 mobile assets and cache keys
+      - name: Add V6.3 mobile layout overrides
+        run: |
+          cat > public/css/v63.css <<'CSS'
+          /* TEMO SuperQi V6.3 — mobile first cleanup */
+          @media (max-width: 720px) {
+            body{padding-left:10px!important;padding-right:10px!important}
+            .app-shell{width:100%!important;max-width:100%!important}
+            .topbar{height:66px!important;gap:8px!important}
+            .wordmark{font-size:20px!important;min-width:0}
+            .top-actions{gap:7px!important}
+            .phone,.apk-top{height:42px!important;padding:0 12px!important}
+            .phone span{display:none!important}
+            .main-tabs{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:2px!important;padding:5px!important;top:6px!important}
+            .main-tab{padding:10px 2px!important;font-size:10px!important;white-space:nowrap!important;overflow:hidden!important}
+            .main-tab span{display:none!important}
+            .media-hero{display:block!important;margin-top:12px!important}
+            .side-stack{display:none!important}
+            .video-stage{min-height:0!important;width:100%!important;padding:5px!important;border-radius:24px!important}
+            .hero-video{display:block!important;width:100%!important;height:auto!important;max-height:58vh!important;aspect-ratio:auto!important;object-fit:contain!important;border-radius:20px!important;background:#02050b!important}
+            .video-overlay{right:12px!important;bottom:12px!important;padding:8px 10px!important;border-radius:12px!important}
+            .video-overlay span{font-size:14px!important}
+            .video-overlay small{font-size:9px!important}
+            .owner-strip{margin:10px 0!important;padding:9px 10px!important}
+            .owner-t{display:none!important}
+            .rate-dashboard{display:block!important;padding:15px!important;border-radius:20px!important;margin-bottom:10px!important}
+            .rate-number{justify-content:center!important}
+            .rate-number strong{font-size:38px!important}
+            .rate-main{text-align:center!important}
+            .rate-metrics{grid-template-columns:repeat(3,1fr)!important;margin-top:10px!important;gap:6px!important}
+            .rate-metrics>div{padding:9px 6px!important;text-align:center!important}
+            .converter-grid{grid-template-columns:1fr!important;gap:10px!important}
+            .panel{padding:15px!important;border-radius:20px!important}
+            .panel-head h2{font-size:18px!important}
+            .money-field input{height:58px!important;font-size:23px!important}
+            .result-card strong{font-size:30px!important}
+            .wallet-cards{grid-template-columns:1fr 1fr!important}
+            .form-grid,.form-grid.two,.planner-results{grid-template-columns:1fr!important}
+            .guide-grid{grid-template-columns:1fr!important}
+            footer{grid-template-columns:54px 1fr!important}
+          }
+          @media (max-width: 390px) {
+            .wordmark{font-size:18px!important}
+            .main-tab{font-size:9px!important}
+            .hero-video{max-height:54vh!important}
+          }
+          CSS
+
+      - name: Refresh V6.3 HTML and cache keys
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
           p = Path('public/index.html')
           s = p.read_text(encoding='utf-8')
-          s = re.sub(r'(\./assets/(?:favicon\.png|temo-superqi-logo\.png|temo-splash\.mp4))(?:\?v=[^"\']+)?', r'\1?v=6.2', s)
-          s = re.sub(r'(\./css/app\.css)(?:\?v=[^"\']+)?', r'\1?v=6.2', s)
-          s = re.sub(r'(\./js/app\.js)(?:\?v=[^"\']+)?', r'\1?v=6.2', s)
-          marker = 'data-critical-v62'
-          if marker not in s:
-              critical = '''  <style data-critical-v62>html,body{margin:0;min-height:100%;background:#02050b}.splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:14px;background:#02050b}.splash.hide{opacity:0;visibility:hidden;pointer-events:none}.splash-inner{width:min(86vw,350px);text-align:center}.splash video{display:block;width:100%;height:auto;aspect-ratio:1/1;object-fit:cover;border-radius:26px}.splash-text{color:#fff;margin:10px 0}.splash button{padding:10px 22px;border-radius:12px}</style>\n'''
-              s = s.replace('</head>', critical + '</head>')
+          s = re.sub(r'\?v=6\.[0-9]+', '?v=6.3', s)
+          s = re.sub(r'<link rel="stylesheet" href="\./css/app\.css(?:\?v=[^"]+)?">', '<link rel="stylesheet" href="./css/app.css?v=6.3">', s)
+          if 'css/v63.css' not in s:
+              s = s.replace('</head>', '  <link rel="stylesheet" href="./css/v63.css?v=6.3">\n</head>')
+          s = re.sub(r'<script src="\./js/app\.js(?:\?v=[^"]+)?"></script>', '<script src="./js/app.js?v=6.3"></script>', s)
           p.write_text(s, encoding='utf-8')
           PY
 
@@ -83,20 +135,21 @@ jobs:
           test -s public/assets/temo-superqi-logo.png
           test -s public/assets/temo-splash.mp4
           test -s public/downloads/TEMO-SuperQi.apk
+          test -s public/css/v63.css
           if ffprobe -v error -select_streams a -show_entries stream=index -of csv=p=0 public/assets/temo-splash.mp4 | grep -q .; then
             echo 'Unexpected audio track in splash MP4'
             exit 1
           fi
-          printf 'V6.2 MOBILE FIX - square animated splash + cache-busted CSS/JS + APK\n%s\n' "$(date -u +%FT%TZ)" > public/version.txt
+          printf 'V6.3 - user MP4 + clean bare URL + mobile fields\n%s\n' "$(date -u +%FT%TZ)" > public/version.txt
 
       - name: Commit generated production files
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add public/index.html public/css/app.css public/assets/temo-superqi-logo.png public/assets/favicon.png public/assets/icon-192.png public/assets/icon-512.png public/assets/temo-splash.mp4 public/downloads/TEMO-SuperQi.apk public/version.txt
+          git add public/index.html public/css/v63.css public/assets/temo-superqi-logo.png public/assets/favicon.png public/assets/icon-192.png public/assets/icon-512.png public/assets/temo-splash.mp4 public/downloads/TEMO-SuperQi.apk public/version.txt
           if git diff --cached --quiet; then
             echo 'Nothing changed'
             exit 0
           fi
-          git commit -m 'Publish SuperQi V6.2 mobile layout fix'
+          git commit -m 'Publish SuperQi V6.3 user video and mobile layout'
           git push origin HEAD:superqi-production
