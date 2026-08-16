@@ -1,0 +1,8 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "temo-usd2iraq",
+  "compatibility_date": "2026-08-16",
+  "assets": {
+    "directory": "./public"
+  }
+}
