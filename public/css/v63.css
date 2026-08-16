@@ -1,0 +1,42 @@
+/* TEMO SuperQi V6.3 — mobile first cleanup */
+@media (max-width: 720px) {
+  body{padding-left:10px!important;padding-right:10px!important}
+  .app-shell{width:100%!important;max-width:100%!important}
+  .topbar{height:66px!important;gap:8px!important}
+  .wordmark{font-size:20px!important;min-width:0}
+  .top-actions{gap:7px!important}
+  .phone,.apk-top{height:42px!important;padding:0 12px!important}
+  .phone span{display:none!important}
+  .main-tabs{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:2px!important;padding:5px!important;top:6px!important}
+  .main-tab{padding:10px 2px!important;font-size:10px!important;white-space:nowrap!important;overflow:hidden!important}
+  .main-tab span{display:none!important}
+  .media-hero{display:block!important;margin-top:12px!important}
+  .side-stack{display:none!important}
+  .video-stage{min-height:0!important;width:100%!important;padding:5px!important;border-radius:24px!important}
+  .hero-video{display:block!important;width:100%!important;height:auto!important;max-height:58vh!important;aspect-ratio:auto!important;object-fit:contain!important;border-radius:20px!important;background:#02050b!important}
+  .video-overlay{right:12px!important;bottom:12px!important;padding:8px 10px!important;border-radius:12px!important}
+  .video-overlay span{font-size:14px!important}
+  .video-overlay small{font-size:9px!important}
+  .owner-strip{margin:10px 0!important;padding:9px 10px!important}
+  .owner-t{display:none!important}
+  .rate-dashboard{display:block!important;padding:15px!important;border-radius:20px!important;margin-bottom:10px!important}
+  .rate-number{justify-content:center!important}
+  .rate-number strong{font-size:38px!important}
+  .rate-main{text-align:center!important}
+  .rate-metrics{grid-template-columns:repeat(3,1fr)!important;margin-top:10px!important;gap:6px!important}
+  .rate-metrics>div{padding:9px 6px!important;text-align:center!important}
+  .converter-grid{grid-template-columns:1fr!important;gap:10px!important}
+  .panel{padding:15px!important;border-radius:20px!important}
+  .panel-head h2{font-size:18px!important}
+  .money-field input{height:58px!important;font-size:23px!important}
+  .result-card strong{font-size:30px!important}
+  .wallet-cards{grid-template-columns:1fr 1fr!important}
+  .form-grid,.form-grid.two,.planner-results{grid-template-columns:1fr!important}
+  .guide-grid{grid-template-columns:1fr!important}
+  footer{grid-template-columns:54px 1fr!important}
+}
+@media (max-width: 390px) {
+  .wordmark{font-size:18px!important}
+  .main-tab{font-size:9px!important}
+  .hero-video{max-height:54vh!important}
+}

@@ -1,2 +1,2 @@
-V6.2 MOBILE FIX - square animated splash + cache-busted CSS/JS + APK
-2026-08-16T11:26:47Z
+V6.3 - user MP4 + clean bare URL + mobile fields
+2026-08-16T23:35:45Z
