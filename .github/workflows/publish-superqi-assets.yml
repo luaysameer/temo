@@ -26,7 +26,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg
 
-      - name: Restore correct TEMO SuperQi logo
+      - name: Restore TEMO SuperQi logo
         run: |
           mkdir -p /tmp/temo public/assets public/downloads public/css
           cat .build-assets/logo/part*.txt | base64 -d > /tmp/temo/logo.webp
@@ -35,23 +35,22 @@ jobs:
           ffmpeg -hide_banner -loglevel error -y -i /tmp/temo/logo.webp -vf 'scale=192:192' public/assets/icon-192.png
           ffmpeg -hide_banner -loglevel error -y -i /tmp/temo/logo.webp -vf 'scale=512:512' public/assets/icon-512.png
 
-      - name: Restore user uploaded MP4 exactly as visual source
+      - name: Restore latest uploaded MP4
         run: |
           if [ -f .build-assets/video-v63b/video.b64 ]; then
             base64 -d .build-assets/video-v63b/video.b64 > /tmp/temo/user-upload.mp4
           elif ls .build-assets/video-v63b/part*.txt >/dev/null 2>&1; then
             cat .build-assets/video-v63b/part*.txt | base64 -d > /tmp/temo/user-upload.mp4
           else
-            echo 'User uploaded MP4 source is missing'
+            echo 'Uploaded MP4 source is missing'
             exit 1
           fi
           ffprobe -v error /tmp/temo/user-upload.mp4
-          ffmpeg -hide_banner -loglevel error -y -i /tmp/temo/user-upload.mp4 -map 0:v:0 -c:v copy -an -movflags +faststart public/assets/temo-splash.mp4
+          ffmpeg -hide_banner -loglevel error -y -i /tmp/temo/user-upload.mp4 -map 0:v:0 -c:v copy -an -movflags +faststart public/assets/splash.mp4
 
-      - name: Add V6.3 mobile layout overrides
+      - name: Write mobile layout overrides
         run: |
-          cat > public/css/v63.css <<'CSS'
-          /* TEMO SuperQi V6.3 — mobile first cleanup */
+          cat > public/css/mobile.css <<'CSS'
           @media (max-width: 720px) {
             body{padding-left:10px!important;padding-right:10px!important}
             .app-shell{width:100%!important;max-width:100%!important}
@@ -95,18 +94,19 @@ jobs:
           }
           CSS
 
-      - name: Refresh V6.3 HTML and cache keys
+      - name: Make production HTML versionless
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
           p = Path('public/index.html')
           s = p.read_text(encoding='utf-8')
-          s = re.sub(r'\?v=6\.[0-9]+', '?v=6.3', s)
-          s = re.sub(r'<link rel="stylesheet" href="\./css/app\.css(?:\?v=[^"]+)?">', '<link rel="stylesheet" href="./css/app.css?v=6.3">', s)
-          if 'css/v63.css' not in s:
-              s = s.replace('</head>', '  <link rel="stylesheet" href="./css/v63.css?v=6.3">\n</head>')
-          s = re.sub(r'<script src="\./js/app\.js(?:\?v=[^"]+)?"></script>', '<script src="./js/app.js?v=6.3"></script>', s)
+          s = re.sub(r'\?v=[0-9.]+', '', s)
+          s = s.replace('./css/v63.css', './css/mobile.css')
+          s = s.replace('./assets/temo-user-splash-v63.mp4', './assets/splash.mp4')
+          s = s.replace('./assets/temo-splash.mp4', './assets/splash.mp4')
+          if './css/mobile.css' not in s:
+              s = s.replace('</head>', '  <link rel="stylesheet" href="./css/mobile.css">\n</head>')
           p.write_text(s, encoding='utf-8')
           PY
 
@@ -130,26 +130,32 @@ jobs:
           rm -rf superqi-apk
           git add -A superqi-apk || true
 
-      - name: Verify production package
+      - name: Verify clean production package
         run: |
+          test -s public/index.html
+          test -s public/css/app.css
+          test -s public/css/mobile.css
           test -s public/assets/temo-superqi-logo.png
-          test -s public/assets/temo-splash.mp4
+          test -s public/assets/splash.mp4
           test -s public/downloads/TEMO-SuperQi.apk
-          test -s public/css/v63.css
-          if ffprobe -v error -select_streams a -show_entries stream=index -of csv=p=0 public/assets/temo-splash.mp4 | grep -q .; then
+          if ffprobe -v error -select_streams a -show_entries stream=index -of csv=p=0 public/assets/splash.mp4 | grep -q .; then
             echo 'Unexpected audio track in splash MP4'
             exit 1
           fi
-          printf 'V6.3 - user MP4 + clean bare URL + mobile fields\n%s\n' "$(date -u +%FT%TZ)" > public/version.txt
+          if grep -qE '\?v=[0-9.]+' public/index.html; then
+            echo 'Version query remains in production HTML'
+            exit 1
+          fi
 
-      - name: Commit generated production files
+      - name: Commit latest production only
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add public/index.html public/css/v63.css public/assets/temo-superqi-logo.png public/assets/favicon.png public/assets/icon-192.png public/assets/icon-512.png public/assets/temo-splash.mp4 public/downloads/TEMO-SuperQi.apk public/version.txt
+          git rm -f public/css/v63.css public/version.txt 2>/dev/null || true
+          git add public/index.html public/css/mobile.css public/assets/temo-superqi-logo.png public/assets/favicon.png public/assets/icon-192.png public/assets/icon-512.png public/assets/splash.mp4 public/downloads/TEMO-SuperQi.apk
           if git diff --cached --quiet; then
             echo 'Nothing changed'
             exit 0
           fi
-          git commit -m 'Publish SuperQi V6.3 user video and mobile layout'
+          git commit -m 'Replace old SuperQi production with latest versionless build'
           git push origin HEAD:superqi-production
