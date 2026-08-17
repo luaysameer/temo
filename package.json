@@ -1,7 +1,7 @@
 {
   "name": "temo-superqi-production",
   "private": true,
-  "version": "1.0.0",
+  "description": "TEMO SuperQi production deployment",
   "devDependencies": {
     "wrangler": "^4.28.1"
   }
