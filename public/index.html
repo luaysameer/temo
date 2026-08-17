@@ -10,8 +10,8 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>TEMO × SuperQi</title>
-  <link rel="icon" href="./assets/favicon.png?v=6.3" type="image/png">
-  <link rel="stylesheet" href="./css/app.css?v=6.3">
+  <link rel="icon" href="./assets/favicon.png" type="image/png">
+  <link rel="stylesheet" href="./css/app.css">
   <style data-critical-v63>
     html,body{margin:0;min-height:100%;background:#02050b}
     .splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:16px;background:radial-gradient(circle at 50% 35%,#101a32 0,#050913 44%,#02050b 100%);transition:opacity .28s ease,visibility .28s ease}
@@ -33,13 +33,13 @@
       .video-overlay{font-size:11px;max-width:72%}
     }
   </style>
-  <link rel="stylesheet" href="./css/v63.css?v=6.3">
+  <link rel="stylesheet" href="./css/mobile.css">
 </head>
 <body>
   <div class="splash" id="splash" aria-label="TEMO SuperQi Splash">
     <div class="splash-inner">
-      <video id="splashVideo" autoplay muted loop playsinline preload="auto" poster="./assets/temo-superqi-logo.png?v=6.3">
-        <source src="./assets/temo-user-splash-v63.mp4" type="video/mp4">
+      <video id="splashVideo" autoplay muted loop playsinline preload="auto" poster="./assets/temo-superqi-logo.png">
+        <source src="./assets/splash.mp4" type="video/mp4">
       </video>
       <div class="splash-text"><strong>TEMO × SuperQi</strong><span>USD ↔ IQD</span></div>
       <button id="skipSplash" type="button">دخول</button>
@@ -70,8 +70,8 @@
         <button class="feature-card" type="button" data-jump="converter" data-mode="iqd"><i>⇄</i><b>IQD → USD</b><span>من الدينار إلى الدولار</span></button>
       </div>
       <div class="video-stage">
-        <video class="hero-video" autoplay muted loop playsinline preload="auto" poster="./assets/temo-superqi-logo.png?v=6.3">
-          <source src="./assets/temo-user-splash-v63.mp4" type="video/mp4">
+        <video class="hero-video" autoplay muted loop playsinline preload="auto" poster="./assets/temo-superqi-logo.png">
+          <source src="./assets/splash.mp4" type="video/mp4">
         </video>
         <div class="video-overlay"><span>TEMO × SuperQi</span><small>التحويل الذكي حسب الخصم الفعلي</small></div>
       </div>
@@ -134,9 +134,9 @@
       <article class="panel apk-card" id="apk-section"><div class="apk-icon">APK</div><div><span>Android App</span><h2>TEMO SuperQi APK</h2><p>نسخة Android تحمل نفس الواجهة وتشتغل محليًا. زر التحميل هنا مخصص للـAPK فقط.</p><div class="apk-meta"><code>downloads/TEMO-SuperQi.apk</code><strong id="apkStatus">جاري التحقق...</strong></div></div><button class="primary" id="apkDownloadGuide">تحميل APK</button></article>
     </section>
 
-    <footer><img src="./assets/temo-superqi-logo.png?v=6.3" alt="TEMO"><div><b>TEMO × SuperQi Calculator</b><span>© 2026 TEMO — جميع الحقوق محفوظة</span><a href="tel:07845663003">07845663003</a></div></footer>
+    <footer><img src="./assets/temo-superqi-logo.png" alt="TEMO"><div><b>TEMO × SuperQi Calculator</b><span>© 2026 TEMO — جميع الحقوق محفوظة</span><a href="tel:07845663003">07845663003</a></div></footer>
   </main>
   <div class="toast" id="toast"></div>
-  <script src="./js/app.js?v=6.3"></script>
+  <script src="./js/app.js"></script>
 </body>
 </html>
