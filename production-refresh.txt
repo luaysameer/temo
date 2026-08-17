@@ -1,2 +1,0 @@
-Force Cloudflare production refresh after deleting and recreating public/index.html.
-2026-08-17T05:46:00+03:00
