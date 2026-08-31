@@ -1,0 +1,60 @@
+name: Build TEMO Arabic Extractor V3 APK
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Decode TEMO Arabic V3 source
+        shell: bash
+        run: |
+          mkdir -p _apkbuild/v3src
+          cat _apkbuild/v3/part*.b64 > _apkbuild/v3/source.b64
+          base64 -d _apkbuild/v3/source.b64 > _apkbuild/v3/source.zip
+          echo "f4202354819ed3dcccfbc279faa4e3c0e0be5db4986fc5796df62195a6e3d6d9  _apkbuild/v3/source.zip" | sha256sum -c -
+          unzip -q _apkbuild/v3/source.zip -d _apkbuild/v3src
+          test -f _apkbuild/v3src/app/src/main/java/com/temo/arabic/extractor/MainActivity.java
+          test -f _apkbuild/v3src/app/src/main/java/com/temo/arabic/extractor/CrashReporter.java
+          test -f _apkbuild/v3src/app/src/main/res/drawable/temo_icon.png
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK 35
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Build V3 debug APK
+        shell: bash
+        run: |
+          cd _apkbuild/v3src
+          gradle :app:assembleDebug --stacktrace
+          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/TEMO_ARABIC_MOVIE_EXTRACTOR_V3_FULL_PACK.apk"
+
+      - name: SHA-256
+        shell: bash
+        run: sha256sum TEMO_ARABIC_MOVIE_EXTRACTOR_V3_FULL_PACK.apk | tee TEMO_ARABIC_MOVIE_EXTRACTOR_V3_FULL_PACK.apk.sha256.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TEMO_ARABIC_MOVIE_EXTRACTOR_V3_FULL_PACK_APK
+          path: |
+            TEMO_ARABIC_MOVIE_EXTRACTOR_V3_FULL_PACK.apk
+            TEMO_ARABIC_MOVIE_EXTRACTOR_V3_FULL_PACK.apk.sha256.txt
+          if-no-files-found: error
