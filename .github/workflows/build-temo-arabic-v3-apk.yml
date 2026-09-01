@@ -1,4 +1,4 @@
-name: Build TEMO Arabic Extractor V3 APK
+name: Build TEMO Arabic Extractor V3.1 APK
 
 on:
   pull_request:
@@ -23,6 +23,10 @@ jobs:
           test -f _apkbuild/v3minsrc/app/src/main/java/com/temo/arabic/extractor/CrashReporter.java
           test -f _apkbuild/v3minsrc/app/src/main/res/drawable/temo_icon.png
 
+      - name: Apply V3.1 movie-name ZIP patch
+        shell: bash
+        run: python .github/scripts/patch-temo-arabic-v31.py
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -40,21 +44,21 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
-      - name: Build V3 debug APK
+      - name: Build V3.1 debug APK
         shell: bash
         run: |
           cd _apkbuild/v3minsrc
           gradle :app:assembleDebug --stacktrace
-          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/TEMO_ARABIC_MOVIE_EXTRACTOR_V3_FULL_PACK.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/TEMO_ARABIC_MOVIE_EXTRACTOR_V3_1.apk"
 
       - name: SHA-256
         shell: bash
-        run: sha256sum TEMO_ARABIC_MOVIE_EXTRACTOR_V3_FULL_PACK.apk | tee TEMO_ARABIC_MOVIE_EXTRACTOR_V3_FULL_PACK.apk.sha256.txt
+        run: sha256sum TEMO_ARABIC_MOVIE_EXTRACTOR_V3_1.apk | tee TEMO_ARABIC_MOVIE_EXTRACTOR_V3_1.apk.sha256.txt
 
       - uses: actions/upload-artifact@v4
         with:
-          name: TEMO_ARABIC_MOVIE_EXTRACTOR_V3_FULL_PACK_APK
+          name: TEMO_ARABIC_MOVIE_EXTRACTOR_V3_1_APK
           path: |
-            TEMO_ARABIC_MOVIE_EXTRACTOR_V3_FULL_PACK.apk
-            TEMO_ARABIC_MOVIE_EXTRACTOR_V3_FULL_PACK.apk.sha256.txt
+            TEMO_ARABIC_MOVIE_EXTRACTOR_V3_1.apk
+            TEMO_ARABIC_MOVIE_EXTRACTOR_V3_1.apk.sha256.txt
           if-no-files-found: error
